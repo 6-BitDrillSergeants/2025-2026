@@ -10,28 +10,18 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp
 public class Drive extends OpMode {
     private DriveController driveController;
-    private Launcher launcher;
-    private final Gamepad previousGamepad2 = new Gamepad();
-    private final Gamepad previousGamepad1 = new Gamepad();
-
-    public static double RPM = 225;
-
-    public static double paddlePos = .56;
+    private LauncherController launcher;
+    private PaddleController paddle;
 
     private int loopCount = 0;
-    private boolean raised = false;
-    Servo paddleServo;
-
-    public static int loopThreshold = 25;
-
+   
     @Override
     public void init() {
         driveController = new DriveController(hardwareMap, telemetry);
-        paddleServo = hardwareMap.get(Servo.class, "paddleServo");
+        paddle = new PaddleController(hardwareMap);
+        launcher = new Launcher(hardwareMap, telemetry);
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-
-        launcher = new Launcher(hardwareMap, telemetry);
     }
 
     @Override
@@ -50,27 +40,33 @@ public class Drive extends OpMode {
 
         // multiply left stick y by -1 to invert direction (forward on the joystick gives negative values)
         //driveController.updateDriveInput(gamepad1.left_bumper, gamepad1.left_stick_y * -1, gamepad1.right_stick_x, gamepad1.left_stick_x);
+        
+        // Inverting controller inputs for cup 1
         driveController.updateDriveInput(gamepad1.left_bumper, gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x* -1);
 
-
-        launcher.updateInputs(gamepad1.a, gamepad1.b, RPM);
-        previousGamepad2.copy(gamepad2);
-        previousGamepad1.copy(gamepad1);
-
-        if (previousGamepad1.yWasPressed()) {
-            paddleServo.setPosition(paddlePos);
+        if (gamepad1.aWasPressed()) {
+            launcher.runFast();
+        } 
+        else if (gamepad1.xWasPressed()) {
+            launcher.runSlow();
+        } 
+        else if (gamepad1.bWasPressed()) {
+            launcher.stop();
+        }
+        else if (gamepad1.yWasPressed()) {
+            paddle.raisePaddle();
             loopCount = 0;
             raised = true;
         }
 
-        if (raised) {
-            loopCount ++;
-            if (loopCount > loopThreshold ) {
+        if (paddle.isRaised()) {
+            loopCount++;
+            if (loopCount >= loopThreshold ) {
+                paddle.lowerPaddle();
                 raised =false;
-                paddleServo.setPosition(0.5);
             }
         }
-        telemetry.addData("loopcount" , loopCount);
+        
         telemetry.update();
     }
 }
