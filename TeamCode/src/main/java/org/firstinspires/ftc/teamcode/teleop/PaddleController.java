@@ -9,7 +9,7 @@ public class PaddleController {
     private final double loweredPosition = 0.5;
     private boolean isRaised = false;
 
-    public DriveController(HardwareMap hardwareMap) {
+    public PaddleController(HardwareMap hardwareMap) {
         servo = hardwareMap.get(Servo.class, "paddleServo");
     }
 

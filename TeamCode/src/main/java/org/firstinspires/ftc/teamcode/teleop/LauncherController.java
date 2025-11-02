@@ -11,8 +11,8 @@ public class LauncherController {
 
     private Telemetry telemetry;
 
-    private final double fastRpm = 225;
-    private final double slowRpm = 200;
+    private final double fastRpm = 3000;
+    private final double slowRpm = 2500;
 
     public LauncherController(HardwareMap hardwareMap, Telemetry telemetry) {
         this.telemetry = telemetry;
@@ -22,7 +22,7 @@ public class LauncherController {
         motor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        motor1.setDirection(DcMotorSimple.Direction.REVERSE);
+        motor1.setDirection(DcMotorEx.Direction.REVERSE);
     }
 
     public void runFast() {
@@ -39,13 +39,10 @@ public class LauncherController {
     }
 
     private void run(double rpm) {
-        double ticksPerRev = 383.6;
+        double ticksPerRev = 28;
         double ticksPerSecond = (rpm * ticksPerRev) / 60;
 
         motor1.setVelocity(ticksPerSecond);
         motor2.setVelocity(ticksPerSecond);
-
-        telemetry.addData("Motor 1 Power:", motor1.getPower());
-        telemetry.addData("Motor 2 Power:", motor2.getPower());
     }
 }

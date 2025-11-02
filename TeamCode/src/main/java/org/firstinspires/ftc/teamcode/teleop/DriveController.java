@@ -11,7 +11,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class DriveController {
     private final double FAST_SPEED_SCALE = 1.0;
-    private final double SLOW_SPEED_SCALE = .25;
+    private final double SLOW_SPEED_SCALE = .5;
 
     private final Telemetry telemetry;
 
