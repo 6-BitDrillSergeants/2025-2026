@@ -11,7 +11,7 @@ public class LauncherController {
 
     private Telemetry telemetry;
 
-    private final double fastRpm = 3200;
+    private final double fastRpm = 4700;
     private final double slowRpm = 2200;
 
 

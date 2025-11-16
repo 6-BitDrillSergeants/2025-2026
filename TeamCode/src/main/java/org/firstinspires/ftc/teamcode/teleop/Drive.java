@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.TeleopConstants;
 
 @Configurable
 @TeleOp
@@ -44,11 +45,15 @@ public class Drive extends OpMode {
         motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
         light = hardwareMap.get(Servo.class, "light");
 
-        follower = Constants.createFollower(hardwareMap);
+        follower = TeleopConstants.createFollower(hardwareMap);
         follower.deactivateAllPIDFs();
         follower.activateTranslational();
         follower.activateHeading();
         //follower.activateDrive();
+
+        launcher.runFast();
+
+        follower.setStartingPose(new Pose(56, 8, Math.toRadians(180)));
     }
 
     @Override
@@ -58,11 +63,13 @@ public class Drive extends OpMode {
 
     @Override
     public void start() {
-
     }
 
     private boolean isHolding = false;
     private boolean hasMoved = false;
+
+    private double min1Speed = 5000;
+    private double min2Speed = 5000;
     private Pose holdPosition;
 
     @Override
@@ -96,12 +103,25 @@ public class Drive extends OpMode {
         } else if (gamepad1.bWasPressed()) {
             launcher.stop();
         } else if (gamepad1.yWasPressed()) {
+            min1Speed = 5000;
+            min2Speed = 5000;
+
             paddle.raisePaddle();
             loopCount = 0;
         }
 
         if (gamepad1.rightBumperWasPressed()) {
-            reverse = !reverse;
+            // rotate robot to shooting heading
+            Pose pose = follower.getPose();
+            Pose target = new Pose(0,143);
+            double dx = target.getX() - pose.getX();
+            double dy = target.getY() - pose.getY();
+            double shootingAngleRad = Math.atan2(dx, dy);
+            double shootingAgnle = Math.toDegrees(shootingAngleRad);
+            if (shootingAgnle < 0) {
+                shootingAgnle += 360;
+            }
+            follower.turnToDegrees(shootingAgnle);
         }
 
         if (paddle.isRaised()) {
@@ -111,12 +131,25 @@ public class Drive extends OpMode {
             }
         }
 
+        if (motor1.getVelocity() < min1Speed) {
+            min1Speed = motor1.getVelocity();
+        }
+
+
+        if (motor2.getVelocity() < min2Speed) {
+            min2Speed = motor2.getVelocity();
+        }
+
         telemetry.addData("Raised:", paddle.isRaised());
         telemetry.addData("Motor 1 Power:", motor1.getPower());
         telemetry.addData("Motor 2 Power:", motor2.getPower());
         telemetry.addData("Motor 1 Speed:", motor1.getVelocity());
         telemetry.addData("Motor 2 Speed:", motor2.getVelocity());
         telemetry.addData("Pose", follower.getPose());
+
+        telemetry.addData("1 min speed", min1Speed);
+
+        telemetry.addData("2 min speed", min2Speed);
 
         telemetry.update();
         follower.update();
