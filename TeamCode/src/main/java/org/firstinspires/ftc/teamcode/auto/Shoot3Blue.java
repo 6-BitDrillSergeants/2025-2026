@@ -36,24 +36,22 @@ public class Shoot3Blue extends NextFTCOpMode {
     private PathChain buildPath() {
         return follower().pathBuilder()
                 .addPath(
-
-                        new BezierLine(new Pose(0, 0), new Pose(96.5, 0))
+                        new BezierLine(new Pose(56.000, 8.000), new Pose(56.000, 102))
                 )
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(233))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(0))
                 .build();
     }
 
     // Full autonomous routine
     private Command autoRoutine() {
+        follower().setStartingPose(new Pose(56, 8, Math.toRadians(180)));
+
         PathChain toShoot = buildPath();
         LauncherController launcher = new LauncherController(hardwareMap, telemetry);
 
         launcher.runSlow();
 
         return new SequentialGroup(
-                // Make sure follower starts from a known pose if you want
-                new InstantCommand(() ->
-                        follower().setStartingPose(new Pose(0, 0, Math.toRadians(180)))),
 
                 // Drive to the spot and wait until finished following
                 new FollowPath(toShoot),

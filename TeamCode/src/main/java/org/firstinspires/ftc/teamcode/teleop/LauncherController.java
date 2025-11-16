@@ -11,8 +11,10 @@ public class LauncherController {
 
     private Telemetry telemetry;
 
-    private final double fastRpm = 3000;
-    private final double slowRpm = 2500;
+    private final double fastRpm = 3200;
+    private final double slowRpm = 2200;
+
+
 
     public LauncherController(HardwareMap hardwareMap, Telemetry telemetry) {
         this.telemetry = telemetry;
