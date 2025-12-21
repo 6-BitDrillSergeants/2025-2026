@@ -19,10 +19,12 @@ import org.firstinspires.ftc.teamcode.pedroPathing.TeleopConstants;
 @TeleOp
 public class Drive extends OpMode {
     private DriveController driveController;
-    private LauncherController launcher;
+    //private LauncherController launcher;
     private PaddleController paddle;
+    private IntakeController intake;
 
-    DcMotorEx motor1;// = hardwareMap.get(DcMotorEx .class, "motor1");
+    private static int intakeRPM = 200;
+    //DcMotorEx motor1;// = hardwareMap.get(DcMotorEx .class, "motor1");
     DcMotorEx motor2;// = hardwareMap.get(DcMotorEx.class, "motor2");
 
     Servo light;
@@ -37,11 +39,12 @@ public class Drive extends OpMode {
     public void init() {
         driveController = new DriveController(hardwareMap, telemetry);
         paddle = new PaddleController(hardwareMap);
-        launcher = new LauncherController(hardwareMap, telemetry);
+        //launcher = new LauncherController(hardwareMap, telemetry);
+        intake = new IntakeController(hardwareMap, telemetry);
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
-        motor1 = hardwareMap.get(DcMotorEx.class, "motor1");
+//        motor1 = hardwareMap.get(DcMotorEx.class, "motor1");
         motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
         light = hardwareMap.get(Servo.class, "light");
 
@@ -51,7 +54,8 @@ public class Drive extends OpMode {
         follower.activateHeading();
         //follower.activateDrive();
 
-        launcher.runFast();
+        //launcher.runFast();
+        intake.runVelocity();
 
         follower.setStartingPose(new Pose(56, 8, Math.toRadians(180)));
     }
@@ -85,7 +89,7 @@ public class Drive extends OpMode {
         ) {
             if (!isHolding && hasMoved) {
                 follower.holdPoint(follower.getPose());
-                isHolding = true;
+                isHolding = false; //DISABLED the holding mechanism
             }
         } else {
             isHolding = false;
@@ -97,11 +101,13 @@ public class Drive extends OpMode {
 
 
         if (gamepad1.aWasPressed()) {
-            launcher.runFast();
+            //launcher.runFast();
+            intake.run(intakeRPM); //TODO: CHANGE BUTTONS OF INTAKE WHEN LAUNCHER IS INSTALLED
         } else if (gamepad1.xWasPressed()) {
-            launcher.runSlow();
+           // launcher.runSlow();
         } else if (gamepad1.bWasPressed()) {
-            launcher.stop();
+            //launcher.stop();
+            intake.stop();
         } else if (gamepad1.yWasPressed()) {
             min1Speed = 5000;
             min2Speed = 5000;
@@ -131,9 +137,9 @@ public class Drive extends OpMode {
             }
         }
 
-        if (motor1.getVelocity() < min1Speed) {
-            min1Speed = motor1.getVelocity();
-        }
+//        if (motor1.getVelocity() < min1Speed) {
+//            min1Speed = motor1.getVelocity();
+//        }
 
 
         if (motor2.getVelocity() < min2Speed) {
@@ -141,15 +147,18 @@ public class Drive extends OpMode {
         }
 
         telemetry.addData("Raised:", paddle.isRaised());
-        telemetry.addData("Motor 1 Power:", motor1.getPower());
+        //telemetry.addData("Motor 1 Power:", motor1.getPower());
         telemetry.addData("Motor 2 Power:", motor2.getPower());
-        telemetry.addData("Motor 1 Speed:", motor1.getVelocity());
+        //telemetry.addData("Motor 1 Speed:", motor1.getVelocity());
         telemetry.addData("Motor 2 Speed:", motor2.getVelocity());
         telemetry.addData("Pose", follower.getPose());
 
         telemetry.addData("1 min speed", min1Speed);
 
         telemetry.addData("2 min speed", min2Speed);
+
+        telemetry.addData("Current Intake RPM", intake.getRpmVelocity());
+
 
         telemetry.update();
         follower.update();
