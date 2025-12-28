@@ -11,6 +11,7 @@ import dev.nextftc.hardware.impl.ServoEx;
 
 // --- Subsystem: Launcher (flywheel + feeder) ---
 public class Launcher implements Subsystem {
+
     public static final Launcher INSTANCE = new Launcher();
 
     // Feeder positions

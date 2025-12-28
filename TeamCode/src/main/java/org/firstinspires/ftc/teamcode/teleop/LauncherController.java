@@ -7,7 +7,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class LauncherController {
     private final DcMotorEx motor1;
-    private final DcMotorEx motor2;
+    //private final DcMotorEx motor2;
 
     private Telemetry telemetry;
 
@@ -19,12 +19,13 @@ public class LauncherController {
     public LauncherController(HardwareMap hardwareMap, Telemetry telemetry) {
         this.telemetry = telemetry;
         motor1 = hardwareMap.get(DcMotorEx.class, "motor1");
-        motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
+        //motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
 
         motor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        motor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //motor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         motor1.setDirection(DcMotorEx.Direction.REVERSE);
+
     }
 
     public void runFast() {
@@ -37,7 +38,7 @@ public class LauncherController {
 
     public void stop() {
         motor1.setVelocity(0);
-        motor2.setVelocity(0);
+        //motor2.setVelocity(0);
     }
 
     private void run(double rpm) {
@@ -45,6 +46,11 @@ public class LauncherController {
         double ticksPerSecond = (rpm * ticksPerRev) / 60;
 
         motor1.setVelocity(ticksPerSecond);
-        motor2.setVelocity(ticksPerSecond);
+        //motor2.setVelocity(ticksPerSecond);
     }
+
+    public double getMotorVelocity() {
+        return motor1.getVelocity();
+    }
+
 }

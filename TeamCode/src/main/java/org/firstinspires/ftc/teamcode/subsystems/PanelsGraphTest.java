@@ -1,61 +1,47 @@
 package org.firstinspires.ftc.teamcode.subsystems;
-
-import com.bylazar.ftcontrol.panels.Panels;
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.bylazar.ftcontrol.panels.integration.TelemetryManager;
+import com.bylazar.telemetry.TelemetryManager;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+
+import dev.nextftc.hardware.impl.MotorEx;
 
 @TeleOp(name = "Test Graph")
+@Configurable
 public class PanelsGraphTest extends OpMode {
-    private TelemetryManager panelsTelemetry= Panels.getTelemetry(); // Ensure getter matches your library
-    private final ElapsedTime timer = new ElapsedTime();
+    private TelemetryManager panelsTelemetry;
+    private VoltageSensor voltageSensor;
 
-    private double sinVariable = 0.0;
-    private double cosVariable = 0.0;
-    private double constVariable = 0.0;
-    private double dampedSine = 0.0;
-    private double lissajous = 0.0;
-    private double ramp = 0.0;
-    private double squareWave = 0.0;
+    public static int speed = 500;
 
     @Override
     public void init() {
-        timer.reset();
-        updateSignals();
+        panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+        motor = hardwareMap.get(DcMotorEx.class, "leftMotor");
+
+        motor.setVelocity(500);
     }
 
     @Override
     public void loop() {
+        motor.setVelocity(speed);
         updateSignals();
     }
 
+    public DcMotorEx motor;
+
     private void updateSignals() {
-        double t = timer.seconds();
-
-        sinVariable = Math.sin(t);
-        cosVariable = Math.cos(t);
-        constVariable = 1.0;
-
-        dampedSine = Math.exp(-0.2 * t) * Math.sin(2 * t);
-
-        lissajous = Math.sin(3 * t + Math.PI / 2) * Math.cos(2 * t);
-
-        ramp = (t % 5.0) / 5.0;
-
-        squareWave = (Math.sin(2 * Math.PI * 0.5 * t) > 0) ? 1.0 : -1.0;
-
-        panelsTelemetry.graph("sin", sinVariable);
-        panelsTelemetry.graph("cos", cosVariable);
-        panelsTelemetry.graph("dampedSine", dampedSine);
-        panelsTelemetry.graph("ramp", ramp);
-        panelsTelemetry.graph("lissajous", lissajous);
-        panelsTelemetry.graph("square", squareWave);
-        panelsTelemetry.graph("const", constVariable);
-
-        panelsTelemetry.debug("extra1:" + t + " extra2:" + (t * t) + " extra3:" + Math.sqrt(t));
+        panelsTelemetry.addData("Battery voltage", voltageSensor.getVoltage());
+        panelsTelemetry.addData("Speed", motor.getVelocity());
+        panelsTelemetry.addData("Current", motor.getCurrent(CurrentUnit.MILLIAMPS));
 
         panelsTelemetry.update(telemetry);
     }

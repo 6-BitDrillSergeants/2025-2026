@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -11,21 +12,26 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
-
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.pedroPathing.TeleopConstants;
+import org.firstinspires.ftc.teamcode.subsystems.Launcher;
 
 @Configurable
 @TeleOp
 public class Drive extends OpMode {
+
+    private TelemetryManager panelsTelemetry= PanelsTelemetry.INSTANCE.getTelemetry();
     private DriveController driveController;
-    //private LauncherController launcher;
+    private LauncherController launcher;
+
     private PaddleController paddle;
     private IntakeController intake;
 
     private static int intakeRPM = 200;
-    //DcMotorEx motor1;// = hardwareMap.get(DcMotorEx .class, "motor1");
-    DcMotorEx motor2;// = hardwareMap.get(DcMotorEx.class, "motor2");
+    DcMotorEx motor1;// = hardwareMap.get(DcMotorEx .class, "motor1");
+    //DcMotorEx motor2;// = hardwareMap.get(DcMotorEx.class, "motor2");
 
     Servo light;
 
@@ -44,8 +50,8 @@ public class Drive extends OpMode {
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
-//        motor1 = hardwareMap.get(DcMotorEx.class, "motor1");
-        motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
+        motor1 = hardwareMap.get(DcMotorEx.class, "motor1");
+        //motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
         light = hardwareMap.get(Servo.class, "light");
 
         follower = TeleopConstants.createFollower(hardwareMap);
@@ -137,20 +143,22 @@ public class Drive extends OpMode {
             }
         }
 
-//        if (motor1.getVelocity() < min1Speed) {
-//            min1Speed = motor1.getVelocity();
-//        }
-
-
-        if (motor2.getVelocity() < min2Speed) {
-            min2Speed = motor2.getVelocity();
+        if (motor1.getVelocity() < min1Speed) {
+            min1Speed = motor1.getVelocity();
         }
 
+
+//        if (motor2.getVelocity() < min2Speed) {
+//            min2Speed = motor2.getVelocity();
+//        }
+
+        panelsTelemetry.addData("Motor velocity: ", launcher.getMotorVelocity());
+
         telemetry.addData("Raised:", paddle.isRaised());
-        //telemetry.addData("Motor 1 Power:", motor1.getPower());
-        telemetry.addData("Motor 2 Power:", motor2.getPower());
-        //telemetry.addData("Motor 1 Speed:", motor1.getVelocity());
-        telemetry.addData("Motor 2 Speed:", motor2.getVelocity());
+        telemetry.addData("Motor 1 Power:", motor1.getPower());
+        //telemetry.addData("Motor 2 Power:", motor2.getPower());
+        telemetry.addData("Motor 1 Speed:", motor1.getVelocity());
+        //telemetry.addData("Motor 2 Speed:", motor2.getVelocity());
         telemetry.addData("Pose", follower.getPose());
 
         telemetry.addData("1 min speed", min1Speed);
@@ -160,6 +168,7 @@ public class Drive extends OpMode {
         telemetry.addData("Current Intake RPM", intake.getRpmVelocity());
 
 
+        panelsTelemetry.update(telemetry);
         telemetry.update();
         follower.update();
     }
