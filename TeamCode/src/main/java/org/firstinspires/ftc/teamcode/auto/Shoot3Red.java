@@ -8,7 +8,7 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.subsystems.LauncherOld;
 import org.firstinspires.ftc.teamcode.teleop.LauncherController;
 
 import dev.nextftc.core.commands.Command;
@@ -26,7 +26,7 @@ public class Shoot3Red extends NextFTCOpMode {
     public Shoot3Red() {
         // Register components: our subsystem + Pedro’s follower
         addComponents(
-                new SubsystemComponent(Launcher.INSTANCE),
+                new SubsystemComponent(LauncherOld.INSTANCE),
                 new PedroComponent(Constants::createFollower)
         );
 
@@ -59,11 +59,11 @@ public class Shoot3Red extends NextFTCOpMode {
                 new FollowPath(toShoot),
                 // Spin up + feed two shots with a small cadence, then stop
                 new SequentialGroup(
-                        Launcher.INSTANCE.feedOne,
+                        LauncherOld.INSTANCE.feedOne,
                         new Delay(1),
-                        Launcher.INSTANCE.feedOne,
+                        LauncherOld.INSTANCE.feedOne,
                         new Delay(1),
-                        Launcher.INSTANCE.feedOne,
+                        LauncherOld.INSTANCE.feedOne,
                         new Delay(1),
                         new InstantCommand(launcher::stop)
                 )

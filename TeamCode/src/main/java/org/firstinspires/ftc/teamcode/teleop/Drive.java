@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -12,26 +11,20 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import com.bylazar.telemetry.TelemetryManager;
+
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.pedroPathing.TeleopConstants;
-import org.firstinspires.ftc.teamcode.subsystems.Launcher;
+import org.firstinspires.ftc.teamcode.targeting.AimingCalculator;
 
 @Configurable
 @TeleOp
 public class Drive extends OpMode {
-
-    private TelemetryManager panelsTelemetry= PanelsTelemetry.INSTANCE.getTelemetry();
     private DriveController driveController;
     private LauncherController launcher;
-
     private PaddleController paddle;
-    private IntakeController intake;
 
-    private static int intakeRPM = 200;
-    DcMotorEx motor1;// = hardwareMap.get(DcMotorEx .class, "motor1");
-    //DcMotorEx motor2;// = hardwareMap.get(DcMotorEx.class, "motor2");
+    DcMotorEx motor1;
+    DcMotorEx motor2;
 
     Servo light;
 
@@ -45,23 +38,20 @@ public class Drive extends OpMode {
     public void init() {
         driveController = new DriveController(hardwareMap, telemetry);
         paddle = new PaddleController(hardwareMap);
-        //launcher = new LauncherController(hardwareMap, telemetry);
-        intake = new IntakeController(hardwareMap, telemetry);
+        launcher = new LauncherController(hardwareMap, telemetry);
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
         motor1 = hardwareMap.get(DcMotorEx.class, "motor1");
-        //motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
+        motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
         light = hardwareMap.get(Servo.class, "light");
 
         follower = TeleopConstants.createFollower(hardwareMap);
         follower.deactivateAllPIDFs();
         follower.activateTranslational();
         follower.activateHeading();
-        //follower.activateDrive();
 
-        //launcher.runFast();
-        intake.runVelocity();
+        launcher.runFast();
 
         follower.setStartingPose(new Pose(56, 8, Math.toRadians(180)));
     }
@@ -95,7 +85,7 @@ public class Drive extends OpMode {
         ) {
             if (!isHolding && hasMoved) {
                 follower.holdPoint(follower.getPose());
-                isHolding = false; //DISABLED the holding mechanism
+                isHolding = true;
             }
         } else {
             isHolding = false;
@@ -107,13 +97,11 @@ public class Drive extends OpMode {
 
 
         if (gamepad1.aWasPressed()) {
-            //launcher.runFast();
-            intake.run(intakeRPM); //TODO: CHANGE BUTTONS OF INTAKE WHEN LAUNCHER IS INSTALLED
+            launcher.runFast();
         } else if (gamepad1.xWasPressed()) {
-           // launcher.runSlow();
+            launcher.runSlow();
         } else if (gamepad1.bWasPressed()) {
-            //launcher.stop();
-            intake.stop();
+            launcher.stop();
         } else if (gamepad1.yWasPressed()) {
             min1Speed = 5000;
             min2Speed = 5000;
@@ -123,17 +111,10 @@ public class Drive extends OpMode {
         }
 
         if (gamepad1.rightBumperWasPressed()) {
-            // rotate robot to shooting heading
-            Pose pose = follower.getPose();
-            Pose target = new Pose(0,143);
-            double dx = target.getX() - pose.getX();
-            double dy = target.getY() - pose.getY();
-            double shootingAngleRad = Math.atan2(dx, dy);
-            double shootingAgnle = Math.toDegrees(shootingAngleRad);
-            if (shootingAgnle < 0) {
-                shootingAgnle += 360;
-            }
-            follower.turnToDegrees(shootingAgnle);
+            Pose aimPose = AimingCalculator.computeAimPose(follower.getPose(), AimingCalculator.Goal.BLUE_GOAL);
+
+            follower.holdPoint(aimPose);
+            isHolding = true;
         }
 
         if (paddle.isRaised()) {
@@ -148,27 +129,21 @@ public class Drive extends OpMode {
         }
 
 
-//        if (motor2.getVelocity() < min2Speed) {
-//            min2Speed = motor2.getVelocity();
-//        }
-
-        panelsTelemetry.addData("Motor velocity: ", launcher.getMotorVelocity());
+        if (motor2.getVelocity() < min2Speed) {
+            min2Speed = motor2.getVelocity();
+        }
 
         telemetry.addData("Raised:", paddle.isRaised());
         telemetry.addData("Motor 1 Power:", motor1.getPower());
-        //telemetry.addData("Motor 2 Power:", motor2.getPower());
+        telemetry.addData("Motor 2 Power:", motor2.getPower());
         telemetry.addData("Motor 1 Speed:", motor1.getVelocity());
-        //telemetry.addData("Motor 2 Speed:", motor2.getVelocity());
+        telemetry.addData("Motor 2 Speed:", motor2.getVelocity());
         telemetry.addData("Pose", follower.getPose());
 
         telemetry.addData("1 min speed", min1Speed);
 
         telemetry.addData("2 min speed", min2Speed);
 
-        telemetry.addData("Current Intake RPM", intake.getRpmVelocity());
-
-
-        panelsTelemetry.update(telemetry);
         telemetry.update();
         follower.update();
     }

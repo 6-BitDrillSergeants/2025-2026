@@ -10,9 +10,9 @@ import dev.nextftc.hardware.controllable.RunToPosition;
 import dev.nextftc.hardware.impl.ServoEx;
 
 // --- Subsystem: Launcher (flywheel + feeder) ---
-public class Launcher implements Subsystem {
+public class LauncherOld implements Subsystem {
 
-    public static final Launcher INSTANCE = new Launcher();
+    public static final LauncherOld INSTANCE = new LauncherOld();
 
     // Feeder positions
     private static final double FEED_POS = 0.57;
