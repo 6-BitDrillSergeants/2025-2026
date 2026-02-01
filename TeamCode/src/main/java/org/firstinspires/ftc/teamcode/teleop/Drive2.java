@@ -95,14 +95,19 @@ public class Drive2 extends OpMode {
 
 
         if (gamepad1.rightBumperWasPressed()) {
-            paddleServo.setPosition(.83); // .60
+           /* paddleServo.setPosition(.83); // .60
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            paddleServo.setPosition(.58); // .35
+            paddleServo.setPosition(.58); // .35*/
+
+            Pose target = AimingCalculator.computeAimPose(follower.getPose(), AimingCalculator.Goal.BLUE_GOAL);
+            follower.holdPoint(target);
         }
+
+
 
         if (gamepad1.aWasPressed()){
             intakeMotor.setPower(1);
@@ -123,7 +128,7 @@ public class Drive2 extends OpMode {
             kickstandMotor.setPower(1);
         }
 
-//        telemetryM.debug("position", follower.getPose());
+        telemetry.addData("position", follower.getPose());
 //        telemetryM.debug("velocity", follower.getVelocity());
 //        telemetryM.debug("automatedDrive", automatedDrive);
 
