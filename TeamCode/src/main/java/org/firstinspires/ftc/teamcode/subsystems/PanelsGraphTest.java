@@ -25,7 +25,7 @@ public class PanelsGraphTest extends OpMode {
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
-        motor = hardwareMap.get(DcMotorEx.class, "leftMotor");
+        motor = hardwareMap.get(DcMotorEx.class, "launcher");
 
         motor.setVelocity(500);
     }

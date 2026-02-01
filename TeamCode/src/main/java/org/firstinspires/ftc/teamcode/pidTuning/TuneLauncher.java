@@ -1,9 +1,18 @@
 package org.firstinspires.ftc.teamcode.pidTuning;
 
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
+
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 /**
  * TeleOp for live-tuning the launcher flywheel velocity controller.
@@ -15,21 +24,35 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
  * - toleranceVelocity
  */
 @TeleOp(name = "TUNE: Launcher Flywheel Velocity", group = "Tuning")
+@Configurable
 public class TuneLauncher extends LinearOpMode {
+
+    private TelemetryManager panelsTelemetry;
+
+    Servo paddleServo;
 
     @Override
     public void runOpMode() {
+        panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+
+        panelsTelemetry.addData("Target", 0);
+        panelsTelemetry.addData("Error", 0);
+        panelsTelemetry.addData("Measured", 0);
+
+        panelsTelemetry.update();
+
         DcMotorEx flywheelMotor = hardwareMap.get(DcMotorEx.class, "launcher");
 
         // We are doing our own velocity control -> avoid built-in velocity mode.
         flywheelMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        flywheelMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
 
         LauncherFlywheelController controller = new LauncherFlywheelController(flywheelMotor);
 
-        telemetry.addLine("Panels: edit LauncherFlywheelTuning.* while running");
-        telemetry.addLine("Use targetVelocity in ticks/sec (same units as motor.getVelocity())");
-        telemetry.update();
+        paddleServo = hardwareMap.get(Servo.class, "paddleServo");
+        paddleServo.setPosition(.58); // .35
+
 
         waitForStart();
 
@@ -48,22 +71,34 @@ public class TuneLauncher extends LinearOpMode {
             double targetVel = LauncherFlywheelTuning.targetVelocity;
             double error = targetVel - measuredVel;
 
-            telemetry.addData("Target (ticks/s)", targetVel);
-            telemetry.addData("Measured (ticks/s)", measuredVel);
-            telemetry.addData("Error (ticks/s)", error);
-            telemetry.addData("At Speed", controller.isAtSpeed());
+            if (gamepad1.rightBumperWasPressed()) {
+                paddleServo.setPosition(.83); // .60
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                paddleServo.setPosition(.58); // .35
+            }
 
-            telemetry.addData("kP", LauncherFlywheelTuning.pid.kP);
-            telemetry.addData("kI", LauncherFlywheelTuning.pid.kI);
-            telemetry.addData("kD", LauncherFlywheelTuning.pid.kD);
-            telemetry.addData("ffV", LauncherFlywheelTuning.ffV);
-            telemetry.addData("ffA", LauncherFlywheelTuning.ffA);
-            telemetry.addData("ffS", LauncherFlywheelTuning.ffS);
+            panelsTelemetry.addData("Target", targetVel);
+            panelsTelemetry.addData("Error", error);
+            panelsTelemetry.addData("Measured", measuredVel);
 
-            telemetry.update();
+            panelsTelemetry.addData("RPM", convertToRpm(measuredVel));
+
+            panelsTelemetry.addData("position", flywheelMotor.getCurrentPosition());
+            panelsTelemetry.addData("amps", flywheelMotor.getCurrent(CurrentUnit.AMPS));
+
+            //flywheelMotor.setVelocity(targetVel);
+            panelsTelemetry.update();
         }
 
         controller.stop();
+    }
+
+    private double convertToRpm(double ticksPerSecond) {
+        return (ticksPerSecond / 28) * 60;
     }
 }
 

@@ -1165,7 +1165,7 @@ class Triangle extends OpMode {
  * @version 1.0, 3/12/2024
  */
 class Circle extends OpMode {
-    public static double RADIUS = 10;
+    public static double RADIUS = 30;
     private PathChain circle;
 
     public void start() {
