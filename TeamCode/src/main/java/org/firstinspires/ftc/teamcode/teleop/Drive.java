@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
-import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -9,150 +10,252 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.pidTuning.LauncherFlywheelController;
 import org.firstinspires.ftc.teamcode.pidTuning.LauncherFlywheelTuning;
+import org.firstinspires.ftc.teamcode.subsystems.Paddle;
 import org.firstinspires.ftc.teamcode.targeting.AimingCalculator;
 
-@Configurable
+import dev.nextftc.core.commands.CommandManager;
+
 @TeleOp
 public class Drive extends OpMode {
-    private DriveController driveController;
-    private LauncherController launcher;
-    private PaddleController paddle;
+    private Follower follower;
+    public static Pose startingPose = new Pose(72, 72, Math.toRadians(90));
 
-    DcMotorEx intakeMotor;
+    private boolean automatedDrive;
+    private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
-    DcMotor flywheelMotor;
-    Servo paddleServo;
-    LauncherFlywheelController controller;
+    private DcMotorEx intakeMotor;
+    private DcMotorEx flywheelMotor;
+    private Servo paddleServo;
+    private LauncherFlywheelController controller;
 
-    DcMotorEx kickstandMotor;
+    private DcMotorEx kickstandMotor;
 
+    private boolean slowMode = false;
+    private final double slowModeMultiplier = 0.2;
 
-    private int loopCount = 0;
+    private static final double STICK_DEAD_ZONE = 0.07;
 
-    public Follower follower;
+    // ------------------- Hold / Input state -------------------
+    private Pose targetPose = new Pose();
+    private boolean aimRequested = false;
+
+    // Snapshot of where we expected to be when we started aiming
+    private Pose aimAnchorPose = new Pose();
+    private Pose idleHoldPose = new Pose();
+
+    private boolean wasDriverInput = true;
+
+    private boolean idleHoldActive = false;
+    private boolean aimHoldActive = false;
+
+    private boolean pendingIdleHold = false;
+    private final ElapsedTime idleSettleTimer = new ElapsedTime();
+
+    // Tuning knobs
+    private static final double IDLE_SETTLE_SEC = 0.15;          // delay before capturing idle pose
+    private static final double TURN_CANCEL_THRESHOLD = 0.02;    // "really zero" turn after deadzone
+
+    private static final double AIM_HEADING_TOL_RAD = Math.toRadians(2.0); // 1–3 deg typical
+    private static final double AIM_ANCHOR_TOL_IN = 2.0;                   // inches drift allowed
+    private static final double AIM_HEADING_DRIFT_TOL_RAD = Math.toRadians(3.0); // extra safety
+    // ----------------------------------------------------------
 
     @Override
     public void init() {
-        driveController = new DriveController(hardwareMap, telemetry);
-        paddle = new PaddleController(hardwareMap);
-        //launcher = new LauncherController(hardwareMap, telemetry);
-        telemetry.addData("Status", "Initialized");
-        telemetry.update();
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        follower.update();
+        telemetryM.update(telemetry);
 
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intakeMotor");
-        //motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
 
         paddleServo = hardwareMap.get(Servo.class, "paddleServo");
-        paddleServo.setPosition(.35);
-        //light = hardwareMap.get(Servo.class, "light");
+        paddleServo.setPosition(.58);
+
+        flywheelMotor = hardwareMap.get(DcMotorEx.class, "launcher");
+        flywheelMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        flywheelMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        controller = new LauncherFlywheelController(flywheelMotor);
 
         kickstandMotor = hardwareMap.get(DcMotorEx.class, "kickstandMotor");
         kickstandMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         kickstandMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        follower = Constants.createFollower(hardwareMap);
-//        follower.deactivateAllPIDFs();
-//        follower.activateTranslational();
-//        follower.activateHeading();
-
-        //launcher.runFast();
-
-//        follower.setStartingPose(new Pose(56, 8, Math.toRadians(180)));
-
-        DcMotorEx flywheelMotor = hardwareMap.get(DcMotorEx.class, "launcher");
-
-        // We are doing our own velocity control -> avoid built-in velocity mode.
-        flywheelMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-         controller = new LauncherFlywheelController(flywheelMotor);
-    }
-
-    @Override
-    public void stop() {
-
     }
 
     @Override
     public void start() {
-        //intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        LauncherFlywheelTuning.targetVelocity = 90;
+        follower.startTeleopDrive();
+
+        // Start as "input present" so we don't immediately auto-hold on start
+        wasDriverInput = true;
+
+        idleHoldActive = false;
+        aimHoldActive = false;
+        pendingIdleHold = false;
     }
-
-    private boolean isHolding = false;
-    private boolean hasMoved = false;
-
-    private double min1Speed = 5000;
-    private double min2Speed = 5000;
-    private Pose holdPosition;
 
     @Override
     public void loop() {
         controller.update();
+        follower.update();
+        telemetryM.update(telemetry);
 
-        //follower.update();
-        telemetry.addData("Status", "Running");
-/*
-        if (gamepad1.left_stick_x == 0 && gamepad1.left_stick_y == 0 && gamepad1.right_stick_x == 0 && gamepad1.right_stick_y == 0) {
-            driveController.updateDriveInput(false,0,0,0);
+        // Read sticks with deadzone first
+        double driveY = applyDeadZone(-gamepad1.left_stick_y, STICK_DEAD_ZONE);
+        double driveX = applyDeadZone(-gamepad1.left_stick_x, STICK_DEAD_ZONE);
+        double turn = applyDeadZone(-gamepad1.right_stick_x, STICK_DEAD_ZONE);
 
-            if (!isHolding && hasMoved) {
-                telemetry.addData("holding", true);
-                //follower.holdPoint(follower.getPose());
-                isHolding = true;
+        boolean driverInputDetected = (Math.abs(driveY) > 0.0) || (Math.abs(driveX) > 0.0) || (Math.abs(turn) > 0.0);
+
+        // ------------------- Cancel holds on driver input -------------------
+        if (driverInputDetected) {
+            // Any stick motion cancels pending idle hold immediately
+            pendingIdleHold = false;
+
+            // If we were previously "no input", then this is the transition back to manual
+            if (!wasDriverInput) {
+                idleHoldActive = false;
+                aimHoldActive = false;
+
+                // Cancel hold by returning to teleop drive mode
+                follower.startTeleopDrive();
             }
-        } else {
-            isHolding = false;
-            hasMoved = true;
-            //follower.startTeleOpDrive();
-
-            double forward = -gamepad1.left_stick_y;
-            double strafe = -gamepad1.left_stick_x;
-            double turn = -gamepad1.right_stick_x;
-
-            //follower.setTeleOpDrive(forward, strafe, turn, true);
-            driveController.updateDriveInput(gamepad1.left_bumper, gamepad1.left_stick_y * -1, gamepad1.right_stick_x, gamepad1.left_stick_x);
-        }*/
-
-        driveController.updateDriveInput(gamepad1.left_bumper, gamepad1.left_stick_y * -1, gamepad1.right_stick_x, gamepad1.left_stick_x);
-
-
-        if (gamepad1.rightBumperWasPressed()) {
-           // Pose aimPose = AimingCalculator.computeAimPose(follower.getPose(), AimingCalculator.Goal.BLUE_GOAL);
-
-           // follower.holdPoint(aimPose);
-           // isHolding = true
-            //;
-
-            paddleServo.setPosition(.6);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            paddleServo.setPosition(.35);
         }
 
-        if (gamepad1.aWasPressed()){
+        // ------------------- Begin idle settle when sticks go neutral --------
+        if (!driverInputDetected && wasDriverInput && !automatedDrive) {
+            pendingIdleHold = true;
+            idleSettleTimer.reset();
+
+            follower.setTeleOpDrive(0, 0, 0, true // Robot Centric
+            );
+        }
+
+        // ------------------- Commit idle hold after settle delay -------------
+        if (!driverInputDetected && pendingIdleHold && !automatedDrive) {
+            boolean turnIsReallyZero = Math.abs(turn) <= TURN_CANCEL_THRESHOLD;
+
+            if (turnIsReallyZero && idleSettleTimer.seconds() >= IDLE_SETTLE_SEC) {
+                idleHoldPose = follower.getPose(); // capture AFTER settle
+                idleHoldActive = true;
+                aimHoldActive = false;
+                pendingIdleHold = false;
+
+                follower.holdPoint(idleHoldPose);
+            }
+        }
+
+        wasDriverInput = driverInputDetected;
+
+        // ------------------- TeleOp drive when driver is commanding ----------
+        if (!automatedDrive && driverInputDetected) {
+            if (slowMode) {
+                driveY *= slowModeMultiplier;
+                driveX *= slowModeMultiplier;
+                turn *= slowModeMultiplier;
+            }
+
+            follower.setTeleOpDrive(driveY, driveX, turn, true);
+        }
+
+        // ------------------- Aim hold (right bumper) -------------------------
+        // Note: This will still be canceled automatically on next stick input.
+        if (gamepad1.rightBumperWasPressed()) {
+            targetPose = AimingCalculator.computeAimPose(
+                    follower.getPose(),
+                    AimingCalculator.Goal.BLUE_GOAL
+            );
+
+            aimRequested = true;
+
+            aimHoldActive = true;
+            idleHoldActive = false;
+            pendingIdleHold = false;
+
+            // Anchor where we were when we requested the shot
+            aimAnchorPose = follower.getPose();
+
+            follower.holdPoint(targetPose);
+        }
+
+        if (aimRequested) {
+            Pose currentPose = follower.getPose();
+
+            boolean headingGood =
+                    angleAbsDiffRad(currentPose.getHeading(), targetPose.getHeading()) <= AIM_HEADING_TOL_RAD;
+
+            boolean anchorStillValid =
+                    distanceInches(currentPose, aimAnchorPose) <= AIM_ANCHOR_TOL_IN &&
+                            angleAbsDiffRad(currentPose.getHeading(), aimAnchorPose.getHeading()) <= AIM_HEADING_DRIFT_TOL_RAD;
+
+            if (headingGood && anchorStillValid) {
+                // We are aimed and we haven't been bumped since aiming began
+                CommandManager.INSTANCE.scheduleCommand(Paddle.INSTANCE.feedOnce());
+
+                aimRequested = false; // consume request so it only fires once
+            }
+        }
+
+        // ------------------- Slow Mode toggle --------------------------------
+        if (gamepad1.leftBumperWasPressed()) {
+            slowMode = !slowMode;
+        }
+
+        // ------------------- Intake ------------------------------------------
+        if (gamepad1.aWasPressed()) {
             intakeMotor.setPower(1);
-        } else if (gamepad1.bWasPressed()){
+        } else if (gamepad1.bWasPressed()) {
             intakeMotor.setPower(0);
         }
 
-        if (gamepad1.leftBumperWasPressed()){
-            kickstandMotor.setTargetPosition(300);
-            kickstandMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-            //kickstandMotor.setPower(15);
+        // ------------------- Flywheel target velocity ------------------------
+        if (gamepad1.dpadUpWasPressed()) {
+            LauncherFlywheelTuning.targetVelocity += 20;
+        } else if (gamepad1.dpadDownWasPressed()) {
+            LauncherFlywheelTuning.targetVelocity -= 20;
         }
 
-        telemetry.addData("kickstandPosition", kickstandMotor.getCurrentPosition());
+        // ------------------- Kickstand (if enabled) --------------------------
+        if (gamepad1.xWasPressed()) {
+            if (kickstandMotor != null) {
+                kickstandMotor.setTargetPosition(800);
+                kickstandMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                kickstandMotor.setPower(1);
+            }
+        }
 
+        telemetryM.debug("driverInputDetected", driverInputDetected);
+        telemetryM.debug("pendingIdleHold", pendingIdleHold);
+        telemetryM.debug("idleHoldActive", idleHoldActive);
+        telemetryM.debug("aimHoldActive", aimHoldActive);
+        telemetryM.debug("current pose", follower.getPose());
+        telemetryM.debug("target pose", targetPose);
+        telemetryM.debug("idle hold pose", idleHoldPose);
+    }
 
-        telemetry.update();
+    private double applyDeadZone(double value, double deadZone) {
+        if (Math.abs(value) < deadZone) {
+            return 0.0;
+        }
+        return value;
+    }
+
+    private static double angleAbsDiffRad(double a, double b) {
+        double diff = a - b;
+        while (diff > Math.PI) diff -= 2.0 * Math.PI;
+        while (diff < -Math.PI) diff += 2.0 * Math.PI;
+        return Math.abs(diff);
+    }
+
+    private static double distanceInches(Pose a, Pose b) {
+        double dx = a.getX() - b.getX();
+        double dy = a.getY() - b.getY();
+        return Math.hypot(dx, dy);
     }
 }
