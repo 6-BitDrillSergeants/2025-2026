@@ -288,7 +288,19 @@ public class Drive extends NextFTCOpMode {
         }
     }
 
-    private record DriveInput(double driveY, double driveX, double turn, boolean driverInputDetected) {
+    private static final class DriveInput {
+        private final double driveY;
+        private final double driveX;
+        private final double turn;
+        private final boolean driverInputDetected;
+
+        private DriveInput(double driveY, double driveX, double turn, boolean driverInputDetected) {
+            this.driveY = driveY;
+            this.driveX = driveX;
+            this.turn = turn;
+            this.driverInputDetected = driverInputDetected;
+        }
+
         private static DriveInput fromRaw(double rawDriveY, double rawDriveX, double rawTurn, double deadZone) {
             double driveY = applyDeadZone(rawDriveY, deadZone);
             double driveX = applyDeadZone(rawDriveX, deadZone);
@@ -302,6 +314,22 @@ public class Drive extends NextFTCOpMode {
                 return 0.0;
             }
             return value;
+        }
+
+        private double driveY() {
+            return driveY;
+        }
+
+        private double driveX() {
+            return driveX;
+        }
+
+        private double turn() {
+            return turn;
+        }
+
+        private boolean driverInputDetected() {
+            return driverInputDetected;
         }
     }
 
