@@ -15,6 +15,11 @@ import dev.nextftc.core.subsystems.Subsystem;
 import dev.nextftc.hardware.impl.MotorEx;
 import kotlin.Unit;
 
+/**
+ * Controls shooter flywheel speed using velocity PID + feedforward.
+ *
+ * <p>Supports either manual RPM targets or automatic distance-based targets.
+ */
 public final class Flywheel implements Subsystem {
 
     public static final Flywheel INSTANCE = new Flywheel();
@@ -26,7 +31,7 @@ public final class Flywheel implements Subsystem {
 
     private ControlSystem controller;
 
-    // State
+    // Runtime state
     private boolean autoFromDistance = false;
     private double targetRpm = 0.0;
 
@@ -105,6 +110,7 @@ public final class Flywheel implements Subsystem {
         double rpm = 0.3666 * d * d - 6.59 * d + 500.0;
         return max(0.0, rpm);
     }
+
     // ----------------------------
     // Units
     // ----------------------------
@@ -116,8 +122,9 @@ public final class Flywheel implements Subsystem {
     }
 
     private double ticksPerSecondToRpm(double ticksPerSecond) {
-        //TODO
-        return 0;
+        double motorRevPerSec = (FlywheelConfig.ticksPerRev == 0.0) ? 0.0 : (ticksPerSecond / FlywheelConfig.ticksPerRev);
+        double flywheelRevPerSec = motorRevPerSec * FlywheelConfig.gearRatio;
+        return flywheelRevPerSec * 60.0;
     }
 
     private static double clamp(double v, double min, double max) {

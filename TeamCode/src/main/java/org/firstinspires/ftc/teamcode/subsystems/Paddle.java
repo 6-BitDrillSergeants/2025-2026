@@ -9,32 +9,31 @@ import dev.nextftc.core.subsystems.Subsystem;
 import dev.nextftc.hardware.impl.ServoEx;
 import dev.nextftc.hardware.positionable.SetPosition;
 
+/** Controls the feeder paddle servo used to advance game pieces into the shooter. */
 public final class Paddle implements Subsystem {
 
     public static final Paddle INSTANCE = new Paddle();
 
+    private final ServoEx paddleServo = new ServoEx("paddle");
+
     private Paddle() {
     }
 
-    private final ServoEx paddleServo = new ServoEx("paddle");
-
-
-    // Simple commands you can reuse elsewhere
+    /** Simple command to move the paddle down. */
     public final Command lower = new SetPosition(paddleServo, PaddleConfig.downPosition).requires(this);
 
+    /** Simple command to move the paddle up. */
     public final Command raise = new SetPosition(paddleServo, PaddleConfig.upPosition).requires(this);
 
     /**
-     * One feed cycle: raise -> wait -> lower.
+     * Runs one feed cycle: raise -> wait -> lower.
      */
     public Command feedOnce() {
-        return new SequentialGroup(raise, new Delay(PaddleConfig.feedTimeSeconds),
-                lower).requires(this);
+        return new SequentialGroup(raise, new Delay(PaddleConfig.feedTimeSeconds), lower).requires(this);
     }
 
     @Override
     public void periodic() {
-        // no periodic updates for servos.
+        // No periodic updates for servos.
     }
 }
-
