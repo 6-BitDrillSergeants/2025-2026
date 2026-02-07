@@ -38,27 +38,7 @@ public class Drive extends NextFTCOpMode {
 
     private static final double STICK_DEAD_ZONE = 0.07;
 
-    // ------------------- Hold / Input state -------------------
-    private Pose aimPose = new Pose();
-    private boolean aimRequested = false;
-
-    // Snapshot of where we expected to be when we started aiming
-    private Pose aimAnchorPose = new Pose();
-
-    private boolean wasDriverInput = true;
-
-    private boolean idleHoldActive = false;
-    private boolean aimHoldActive = false;
-
-    private boolean pendingIdleHold = false;
-    private final ElapsedTime idleSettleTimer = new ElapsedTime();
-
-    // Tuning knobs
-    private static final double IDLE_SETTLE_SEC = 0.15;          // delay before capturing idle pose
-    private static final double TURN_CANCEL_THRESHOLD = 0.02;    // "really zero" turn after deadzone
-
-    private static final double AIM_HEADING_TOL_RAD = Math.toRadians(2.0); // 1–3 deg typical
-    private static final double AIM_ANCHOR_TOL_IN = 2.0;                   // inches drift allowed
+    private final DriveHoldController holdController = new DriveHoldController();
 
     // ------------------- Endgame timers -------------------
     private final ElapsedTime matchTimer = new ElapsedTime();
@@ -117,14 +97,7 @@ public class Drive extends NextFTCOpMode {
 
     @Override
     public void onStartButtonPressed() {
-        PedroComponent.follower().startTeleopDrive();
-
-        // Start as "input present" so we don't immediately auto-hold on start
-        wasDriverInput = true;
-
-        idleHoldActive = false;
-        aimHoldActive = false;
-        pendingIdleHold = false;
+        holdController.resetForStart();
 
         Flywheel.INSTANCE.enableAutoFromDistance();
 
@@ -139,13 +112,13 @@ public class Drive extends NextFTCOpMode {
 
         DriveInput input = readDriveInput();
 
-        handleDriverInput(input);
-        handleIdleSettleAndHold(input);
-        wasDriverInput = input.driverInputDetected();
+        holdController.handleDriverInput(input.driverInputDetected());
+        holdController.handleIdleSettleAndHold(input.driverInputDetected(), input.turn());
+        holdController.updateDriverInputState(input.driverInputDetected());
 
         applyTeleopDrive(input);
-        handleAimHoldRequest();
-        handleAutoFireWhenAimed();
+        holdController.handleAimHoldRequest(gamepad1.rightBumperWasPressed());
+        holdController.handleAutoFireWhenAimed();
 
         // ------------------- Slow Mode toggle --------------------------------
         if (gamepad1.leftBumperWasPressed()) {
@@ -175,7 +148,7 @@ public class Drive extends NextFTCOpMode {
 
         // ------------------- Kickstand ---------------------------------------
         if (gamepad1.xWasPressed()) {
-            cancelHolds();
+            holdController.cancelHolds();
             Kickstand.INSTANCE.deploy();
         } else if (gamepad1.yWasPressed()) {
             Kickstand.INSTANCE.retract();
@@ -207,41 +180,7 @@ public class Drive extends NextFTCOpMode {
                 STICK_DEAD_ZONE);
     }
 
-    private void handleDriverInput(DriveInput input) {
-        if (!input.driverInputDetected()) {
-            return;
-        }
 
-        // Any stick motion cancels pending idle hold and any pending shot immediately
-        pendingIdleHold = false;
-        aimRequested = false;
-
-        // If we were previously "no input", this is the transition back to manual
-        if (!wasDriverInput) {
-            idleHoldActive = false;
-            aimHoldActive = false;
-            PedroComponent.follower().startTeleopDrive();
-        }
-    }
-
-    private void handleIdleSettleAndHold(DriveInput input) {
-        if (!input.driverInputDetected() && wasDriverInput) {
-            pendingIdleHold = true;
-            idleSettleTimer.reset();
-            PedroComponent.follower().setTeleOpDrive(0, 0, 0, true);
-        }
-
-        if (!input.driverInputDetected() && pendingIdleHold) {
-            boolean turnIsReallyZero = Math.abs(input.turn()) <= TURN_CANCEL_THRESHOLD;
-            if (turnIsReallyZero && idleSettleTimer.seconds() >= IDLE_SETTLE_SEC) {
-                Pose idleHoldPose = PedroComponent.follower().getPose();
-                idleHoldActive = true;
-                aimHoldActive = false;
-                pendingIdleHold = false;
-                PedroComponent.follower().holdPoint(idleHoldPose);
-            }
-        }
-    }
 
     private void applyTeleopDrive(DriveInput input) {
         if (!input.driverInputDetected()) {
@@ -261,38 +200,7 @@ public class Drive extends NextFTCOpMode {
         PedroComponent.follower().setTeleOpDrive(driveY, driveX, turn, true);
     }
 
-    private void handleAimHoldRequest() {
-        if (!gamepad1.rightBumperWasPressed()) {
-            return;
-        }
 
-        Pose currentPose = PedroComponent.follower().getPose();
-        aimPose = AimingCalculator.computeAimPose(currentPose, TeamConfig.goal);
-        aimRequested = true;
-
-        aimHoldActive = true;
-        idleHoldActive = false;
-        pendingIdleHold = false;
-
-        // Anchor where we were when we requested the shot
-        aimAnchorPose = currentPose;
-        PedroComponent.follower().holdPoint(aimPose);
-    }
-
-    private void handleAutoFireWhenAimed() {
-        if (!aimRequested) {
-            return;
-        }
-
-        Pose currentPose = PedroComponent.follower().getPose();
-        boolean headingGood = angleAbsDiffRad(currentPose.getHeading(), aimPose.getHeading()) <= AIM_HEADING_TOL_RAD;
-        boolean anchorStillValid = distanceInches(currentPose, aimAnchorPose) <= AIM_ANCHOR_TOL_IN;
-
-        if (headingGood && anchorStillValid && Flywheel.INSTANCE.isAtSpeed()) {
-            CommandManager.INSTANCE.scheduleCommand(Paddle.INSTANCE.feedOnce());
-            aimRequested = false;
-        }
-    }
 
     private static final class DriveInput {
         private final double driveY;
@@ -346,29 +254,8 @@ public class Drive extends NextFTCOpMode {
     }
 
 
-    private static double angleAbsDiffRad(double a, double b) {
-        double diff = a - b;
-        while (diff > Math.PI) diff -= 2.0 * Math.PI;
-        while (diff < -Math.PI) diff += 2.0 * Math.PI;
-        return Math.abs(diff);
-    }
 
-    private static double distanceInches(Pose a, Pose b) {
-        double dx = a.getX() - b.getX();
-        double dy = a.getY() - b.getY();
-        return Math.hypot(dx, dy);
-    }
 
-    private void cancelHolds() {
-        pendingIdleHold = false;
-        idleHoldActive = false;
-        aimHoldActive = false;
-
-        aimRequested = false;
-
-        // Return follower to normal teleop control (cancels holdPoint)
-        PedroComponent.follower().startTeleopDrive();
-    }
 
     private void publishCompetitionTelemetry(DriveInput input, double elapsedSec) {
         Pose currentPose = PedroComponent.follower().getPose();
@@ -377,15 +264,15 @@ public class Drive extends NextFTCOpMode {
         double currentRpm = Flywheel.INSTANCE.getCurrentRpm();
         double rpmError = targetRpm - currentRpm;
 
-        boolean headingGood = angleAbsDiffRad(currentPose.getHeading(), aimPose.getHeading()) <= AIM_HEADING_TOL_RAD;
-        boolean anchorGood = distanceInches(currentPose, aimAnchorPose) <= AIM_ANCHOR_TOL_IN;
+        boolean headingGood = holdController.isHeadingGood(currentPose);
+        boolean anchorGood = holdController.isAnchorGood(currentPose);
         boolean flywheelReady = Flywheel.INSTANCE.isAtSpeed();
 
         telemetryM.debug("=== DRIVE ===");
         telemetryM.debug(String.format(
                 Locale.US,
                 "Mode: %s  Slow: %s  Input: %s",
-                activeDriveMode(),
+                holdController.activeDriveMode(),
                 asStatus(slowMode),
                 asStatus(input.driverInputDetected())));
 
@@ -414,7 +301,7 @@ public class Drive extends NextFTCOpMode {
         telemetryM.debug(String.format(
                 Locale.US,
                 "%s Aim requested    %s Flywheel speed",
-                asStatus(aimRequested),
+                asStatus(holdController.isAimRequested()),
                 asStatus(flywheelReady)));
         telemetryM.debug(String.format(
                 Locale.US,
@@ -423,46 +310,17 @@ public class Drive extends NextFTCOpMode {
                 asStatus(anchorGood)));
 
         telemetryM.debug("");
-        telemetryM.debug("Blocked by: " + firstBlockingCondition(headingGood, anchorGood, flywheelReady));
+        telemetryM.debug("Blocked by: " + holdController.firstBlockingCondition(flywheelReady, currentPose));
 
         telemetryM.debug("");
         telemetryM.debug("Holds:");
         telemetryM.debug(String.format("%s Idle                %s Aiming",
-                asStatus(idleHoldActive),
-                asStatus(aimHoldActive)));
+                asStatus(holdController.isIdleHoldActive()),
+                asStatus(holdController.isAimHoldActive())));
 
         telemetryM.debug("");
         telemetryM.debug("=== KICKSTAND ===");
         telemetryM.debug("Kickstand position: " + hardwareMap.get(DcMotorEx.class, "kickstand").getCurrentPosition());
-    }
-
-    private String activeDriveMode() {
-        if (aimHoldActive) {
-            return "AIM_HOLD";
-        }
-        if (idleHoldActive) {
-            return "IDLE_HOLD";
-        }
-        if (pendingIdleHold) {
-            return "SETTLING";
-        }
-        return "DRIVER";
-    }
-
-    private String firstBlockingCondition(boolean headingGood, boolean anchorGood, boolean flywheelReady) {
-        if (!aimRequested) {
-            return "Waiting for aim request";
-        }
-        if (!headingGood) {
-            return "Heading not in tolerance";
-        }
-        if (!anchorGood) {
-            return "Robot moved too far while aiming";
-        }
-        if (!flywheelReady) {
-            return "Flywheel not at speed";
-        }
-        return "Ready to fire";
     }
 
     private String asStatus(boolean ready) {
