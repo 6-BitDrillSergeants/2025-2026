@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.subsystems.config.PaddleConfig;
 
 import dev.nextftc.core.commands.Command;
@@ -14,7 +15,7 @@ public final class Paddle implements Subsystem {
 
     public static final Paddle INSTANCE = new Paddle();
 
-    private final ServoEx paddleServo = new ServoEx("paddle");
+    private final ServoEx paddleServo = new ServoEx(RobotConfig.paddleServoName);
 
     private Paddle() {
     }

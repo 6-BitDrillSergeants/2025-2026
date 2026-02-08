@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
@@ -25,10 +26,10 @@ public class Constants {
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            .rightFrontMotorName("rightFront")
-            .leftFrontMotorName("leftFront")
-            .rightRearMotorName("rightBack")
-            .leftRearMotorName("leftBack")
+            .rightFrontMotorName(RobotConfig.rightFrontMotorName)
+            .leftFrontMotorName(RobotConfig.leftFrontMotorName)
+            .rightRearMotorName(RobotConfig.rightBackMotorName)
+            .leftRearMotorName(RobotConfig.leftBackMotorName)
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
@@ -40,7 +41,7 @@ public class Constants {
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(-4.7)
             .distanceUnit(DistanceUnit.INCH)
-            .hardwareMapName("pinpoint")
+            .hardwareMapName(RobotConfig.pinpointName)
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);

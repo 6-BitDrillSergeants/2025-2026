@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.subsystems.config.IntakeConfig;
 
 import dev.nextftc.core.subsystems.Subsystem;
@@ -10,7 +11,7 @@ public final class Intake implements Subsystem {
 
     public static final Intake INSTANCE = new Intake();
 
-    private final MotorEx intakeMotor = new MotorEx("intake");
+    private final MotorEx intakeMotor = new MotorEx(RobotConfig.intakeMotorName);
 
     private Intake() {
     }

@@ -2,13 +2,10 @@ package org.firstinspires.ftc.teamcode.targeting;
 
 import com.pedropathing.geometry.Pose;
 
+import org.firstinspires.ftc.teamcode.config.Goal;
+import org.firstinspires.ftc.teamcode.config.GoalConfig;
+
 public final class AimingCalculator {
-
-    public enum Goal {
-        BLUE_GOAL,   // (0, 144)
-        RED_GOAL     // (144, 144)
-    }
-
     private static final double BLUE_GOAL_X = 0.0;
     private static final double RED_GOAL_X = 144.0;
     private static final double GOAL_Y = 144.0;
@@ -25,7 +22,7 @@ public final class AimingCalculator {
      * Heading is unused and set to 0.
      */
     public static Pose computeDynamicGoalPose(Pose currentPose, Goal goal) {
-        double baseGoalX = (goal == Goal.BLUE_GOAL) ? BLUE_GOAL_X : RED_GOAL_X;
+        double baseGoalX = (goal == Goal.BLUE) ? BLUE_GOAL_X : RED_GOAL_X;
 
         double targetX = computeDynamicGoalX(currentPose.getX(), baseGoalX);
         double targetY = computeDynamicGoalY(currentPose.getY());
@@ -61,15 +58,14 @@ public final class AimingCalculator {
     // ----------------------------
 
     private static double computeDynamicGoalX(double robotX, double baseGoalX) {
-        double distanceFromGoalX = Math.abs(baseGoalX - robotX);
+        double t =
+                (GoalConfig.goal == Goal.BLUE)
+                        ? clamp((FIELD_CENTER - robotX) / FIELD_CENTER, 0.0, 1.0)  // 1 at x=0, 0 at x>=72
+                        : clamp((robotX - FIELD_CENTER) / FIELD_CENTER, 0.0, 1.0); // 1 at x=144, 0 at x<=72
 
-        double offsetFactor =
-                clamp(FIELD_CENTER - distanceFromGoalX, 0.0, FIELD_CENTER)
-                        / FIELD_CENTER;
+        double inwardOffset = t * OFFSET_MAX;
 
-        double inwardOffset = offsetFactor * OFFSET_MAX;
-
-        return (baseGoalX == BLUE_GOAL_X)
+        return (GoalConfig.goal == Goal.BLUE)
                 ? baseGoalX + inwardOffset
                 : baseGoalX - inwardOffset;
     }

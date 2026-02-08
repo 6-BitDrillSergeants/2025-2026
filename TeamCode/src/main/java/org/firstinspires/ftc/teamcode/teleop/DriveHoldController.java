@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.subsystems.Paddle;
 import org.firstinspires.ftc.teamcode.targeting.AimingCalculator;
-import org.firstinspires.ftc.teamcode.targeting.TeamConfig;
+import org.firstinspires.ftc.teamcode.config.GoalConfig;
 
 import dev.nextftc.core.commands.CommandManager;
 import dev.nextftc.extensions.pedro.PedroComponent;
@@ -84,7 +84,7 @@ final class DriveHoldController {
         }
 
         Pose currentPose = PedroComponent.follower().getPose();
-        aimPose = AimingCalculator.computeAimPose(currentPose, TeamConfig.goal);
+        aimPose = AimingCalculator.computeAimPose(currentPose, GoalConfig.goal);
         aimRequested = true;
 
         aimHoldActive = true;

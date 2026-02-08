@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.targeting;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 
+import org.firstinspires.ftc.teamcode.config.GoalConfig;
+
 import dev.nextftc.extensions.pedro.PedroComponent;
 
 public final class DistanceProvider {
@@ -19,7 +21,7 @@ public final class DistanceProvider {
         Follower follower = PedroComponent.follower();
 
         Pose current = follower.getPose();
-        Pose target = AimingCalculator.computeDynamicGoalPose(current, TeamConfig.goal);
+        Pose target = AimingCalculator.computeDynamicGoalPose(current, GoalConfig.goal);
 
         double dx = target.getX() - current.getX();
         double dy = target.getY() - current.getY();

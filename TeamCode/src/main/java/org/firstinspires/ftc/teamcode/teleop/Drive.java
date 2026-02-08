@@ -5,18 +5,18 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.config.GoalSelector;
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
 import org.firstinspires.ftc.teamcode.subsystems.Paddle;
+import org.firstinspires.ftc.teamcode.subsystems.PosePublisher;
 import org.firstinspires.ftc.teamcode.subsystems.config.FlywheelConfig;
-import org.firstinspires.ftc.teamcode.targeting.AimingCalculator;
 import org.firstinspires.ftc.teamcode.targeting.DistanceProvider;
-import org.firstinspires.ftc.teamcode.targeting.TeamConfig;
 
 import java.util.Locale;
 
@@ -30,7 +30,7 @@ import dev.nextftc.ftc.components.BulkReadComponent;
 @TeleOp(name = "Drive", group = "teleop")
 public class Drive extends NextFTCOpMode {
 
-    public static Pose startingPose = new Pose(72, 72, Math.toRadians(90));
+    public static Pose startingPose = RobotConfig.getStartingPose(false);
     private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
     private boolean slowMode = false;
@@ -56,10 +56,12 @@ public class Drive extends NextFTCOpMode {
                 CommandManager.INSTANCE,
 
                 // Subsystems
-                new SubsystemComponent(Flywheel.INSTANCE),
-                new SubsystemComponent(Intake.INSTANCE),
-                new SubsystemComponent(Kickstand.INSTANCE),
-                new SubsystemComponent(Paddle.INSTANCE),
+                new SubsystemComponent(
+                        Flywheel.INSTANCE,
+                        Intake.INSTANCE,
+                        Kickstand.INSTANCE,
+                        Paddle.INSTANCE,
+                        PosePublisher.INSTANCE),
 
                 // Pedro integration: creates + updates follower automatically
                 new PedroComponent(Constants::createFollower));
@@ -68,29 +70,14 @@ public class Drive extends NextFTCOpMode {
     @Override
     public void onInit() {
         PedroComponent.follower().setStartingPose(startingPose == null ? new Pose() : startingPose);
-
         telemetryM.update(telemetry);
     }
 
     @Override
     public void onWaitForStart() {
         super.onWaitForStart();
-
-        // Monitor "back" button to select team goal
-        if (gamepad1.backWasPressed()) {
-            TeamConfig.goal = TeamConfig.goal == AimingCalculator.Goal.BLUE_GOAL ?
-                    AimingCalculator.Goal.RED_GOAL : AimingCalculator.Goal.BLUE_GOAL;
-        }
-
-        // Set controller LED to match goal color
-        if (TeamConfig.goal == AimingCalculator.Goal.RED_GOAL) {
-            gamepad1.setLedColor(1.0, 0.0, 0.0, Gamepad.LED_DURATION_CONTINUOUS); // red
-        } else if (TeamConfig.goal == AimingCalculator.Goal.BLUE_GOAL) {
-            gamepad1.setLedColor(0.0, 0.0, 1.0, Gamepad.LED_DURATION_CONTINUOUS); // blue
-        }
-
-        telemetryM.debug("Use 'back' button to select goal", TeamConfig.goal);
-        telemetryM.update(telemetry);
+        GoalSelector.update(gamepad1, telemetryM);
+        telemetryM.update();
     }
 
     @Override
@@ -98,6 +85,7 @@ public class Drive extends NextFTCOpMode {
         holdController.resetForStart();
 
         Flywheel.INSTANCE.enableAutoFromDistance();
+        Paddle.INSTANCE.lower.run();
 
         matchTimer.reset();
         didRumble145 = false;
@@ -179,7 +167,6 @@ public class Drive extends NextFTCOpMode {
     }
 
 
-
     private void applyTeleopDrive(DriveInput input) {
         if (!input.driverInputDetected()) {
             return;
@@ -197,7 +184,6 @@ public class Drive extends NextFTCOpMode {
 
         PedroComponent.follower().setTeleOpDrive(driveY, driveX, turn, true);
     }
-
 
 
     private static final class DriveInput {
@@ -277,7 +263,7 @@ public class Drive extends NextFTCOpMode {
                 currentPose.getY(),
                 Math.toDegrees(currentPose.getHeading())));
 
-        if (holdController.isAimRequested()){
+        if (holdController.isAimRequested()) {
             Pose aimPose = holdController.getAimPose();
             telemetryM.debug(String.format(
                     Locale.US,

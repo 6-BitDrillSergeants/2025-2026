@@ -7,6 +7,7 @@ import static dev.nextftc.control.builder.ControlSystemBuilderKt.controlSystem;
 import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.subsystems.config.FlywheelConfig;
 import org.firstinspires.ftc.teamcode.targeting.DistanceProvider;
 
@@ -28,7 +29,7 @@ public final class Flywheel implements Subsystem {
     private Flywheel() {
     }
 
-    private final MotorEx flywheelMotor = new MotorEx("flywheel");
+    private final MotorEx flywheelMotor = new MotorEx(RobotConfig.flywheelMotorName);
 
     private ControlSystem controller;
 
@@ -131,6 +132,10 @@ public final class Flywheel implements Subsystem {
     private static double clamp(double v, double min, double max) {
         return Math.max(min, Math.min(max, v));
     }
+
+    // ----------------------------
+    // Helpers
+    // ----------------------------
 
     private void rebuildController() {
         controller = controlSystem(system -> {

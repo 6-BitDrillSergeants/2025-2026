@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.subsystems.config.KickstandConfig;
 
 import dev.nextftc.core.subsystems.Subsystem;
@@ -14,7 +15,7 @@ public final class Kickstand implements Subsystem {
 
     public static final Kickstand INSTANCE = new Kickstand();
 
-    private final MotorEx kickstandMotor = new MotorEx("kickstand");
+    private final MotorEx kickstandMotor = new MotorEx(RobotConfig.kickstandMotorName);
 
     private Kickstand() {
     }
