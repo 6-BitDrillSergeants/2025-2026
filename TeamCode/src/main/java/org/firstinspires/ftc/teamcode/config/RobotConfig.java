@@ -15,16 +15,8 @@ public final class RobotConfig {
 
     private static Pose currentPose = null;
 
-    public static Pose getStartingPose(boolean reset) {
-        if (currentPose == null || reset) {
-            if (GoalConfig.goal == Goal.BLUE) {
-                return new Pose(56, 12, Math.toRadians(90));
-            } else {
-                return new Pose(87, 12, Math.toRadians(90));
-            }
-        } else {
-            return currentPose;
-        }
+    public static Pose getCurrentPose() {
+        return currentPose != null ? currentPose : new Pose();
     }
 
     public static void setCurrentPose(Pose newPose) {

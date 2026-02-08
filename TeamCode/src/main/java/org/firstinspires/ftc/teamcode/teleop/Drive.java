@@ -81,7 +81,7 @@ public class Drive extends NextFTCOpMode {
 
     @Override
     public void onStartButtonPressed() {
-        startingPose = RobotConfig.getStartingPose(false);
+        startingPose = RobotConfig.getCurrentPose();
         holdController.resetForStart();
 
         Flywheel.INSTANCE.enableAutoFromDistance();
