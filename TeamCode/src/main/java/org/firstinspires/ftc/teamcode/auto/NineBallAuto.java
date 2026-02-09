@@ -23,6 +23,7 @@ import dev.nextftc.core.commands.Command;
 import dev.nextftc.core.commands.groups.SequentialGroup;
 import dev.nextftc.core.commands.utility.InstantCommand;
 import dev.nextftc.core.components.SubsystemComponent;
+import dev.nextftc.extensions.pedro.FollowPath;
 import dev.nextftc.extensions.pedro.PedroComponent;
 import dev.nextftc.ftc.NextFTCOpMode;
 
@@ -95,9 +96,9 @@ public class NineBallAuto extends NextFTCOpMode {
                 new InstantCommand(Flywheel.INSTANCE::enableAutoFromDistance),
 
                 // Collect 3 balls and drive to shooting position
-                //new FollowPath(paths.buildPath1(follower(), GoalConfig.goal)),
+                new FollowPath(paths.buildPath1(follower(), GoalConfig.goal)),
                 new InstantCommand(Intake.INSTANCE::on),
-                //new FollowPath(paths.buildPath2(follower(), GoalConfig.goal)),
+                new FollowPath(paths.buildPath2(follower(), GoalConfig.goal)),
                 new InstantCommand(Intake.INSTANCE::off),
                 //new FollowPath(paths.buildPath3(follower(), GoalConfig.goal)),
 
