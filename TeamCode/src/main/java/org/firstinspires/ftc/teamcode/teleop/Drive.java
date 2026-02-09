@@ -66,13 +66,6 @@ public class Drive extends NextFTCOpMode {
     }
 
     @Override
-    public void onInit() {
-        PedroComponent.follower().setStartingPose(startingPose == null ? new Pose() : startingPose);
-        telemetryM.update(telemetry);
-
-    }
-
-    @Override
     public void onWaitForStart() {
         super.onWaitForStart();
         GoalSelector.update(gamepad1, telemetryM);
@@ -82,6 +75,7 @@ public class Drive extends NextFTCOpMode {
     @Override
     public void onStartButtonPressed() {
         startingPose = RobotConfig.getCurrentPose();
+        PedroComponent.follower().setStartingPose(startingPose == null ? new Pose() : startingPose);
         holdController.resetForStart();
 
         Flywheel.INSTANCE.enableAutoFromDistance();
