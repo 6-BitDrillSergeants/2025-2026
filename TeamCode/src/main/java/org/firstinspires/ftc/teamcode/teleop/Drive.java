@@ -126,6 +126,11 @@ public class Drive extends NextFTCOpMode {
             Flywheel.INSTANCE.enableAutoFromDistance();
         }
 
+        // ------------------- Force shot --------------------------------------
+        if (gamepad1.rightTriggerWasPressed()) {
+            Paddle.INSTANCE.feedOnce().run();
+        }
+
         // ------------------- Kickstand ---------------------------------------
         if (gamepad1.xWasPressed()) {
             holdController.cancelHolds();

@@ -5,8 +5,10 @@ import static java.lang.Math.max;
 import static dev.nextftc.control.builder.ControlSystemBuilderKt.controlSystem;
 
 import com.bylazar.telemetry.TelemetryManager;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.subsystems.config.FlywheelConfig;
 import org.firstinspires.ftc.teamcode.targeting.DistanceProvider;
@@ -85,6 +87,8 @@ public final class Flywheel implements Subsystem {
     public void initialize() {
         Subsystem.super.initialize();
         rebuildController();
+
+        flywheelMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
     @Override
@@ -99,8 +103,9 @@ public final class Flywheel implements Subsystem {
         }
 
         controller.setGoal(new KineticState(0.0, rpmToTicksPerSecond(FlywheelConfig.targetRpm)));
-        double power = controller.calculate(new KineticState(flywheelMotor.getCurrentPosition(), flywheelMotor.getVelocity()));
+        double power = controller.calculate(new KineticState(0, flywheelMotor.getVelocity()));
 
+        //flywheelMotor.getMotor().setVelocity(rpmToTicksPerSecond(FlywheelConfig.targetRpm));
         flywheelMotor.setPower(power);
     }
 
@@ -108,14 +113,10 @@ public final class Flywheel implements Subsystem {
     // Distance -> RPM mapping
     // ----------------------------
 
-    /**
-     * Quadratic fit:
-     * y = 0.3666 x^2 - 6.59 x + 500
-     * clamped to [0, 80] distance range.
-     */
+
     private double rpmForDistance(double distanceRaw) {
         double d = clamp(distanceRaw, 0.0, 80.0);
-        double rpm = 0.3666 * d * d - 6.59 * d + 500.0;
+        double rpm = 12.9 * distanceRaw + 1451;
         return max(0.0, rpm);
     }
 
@@ -160,5 +161,7 @@ public final class Flywheel implements Subsystem {
         telemetryM.addData("flywheel/target_rpm", targetRpm);
         telemetryM.addData("flywheel/current_rpm", currentRpm);
         telemetryM.addData("flywheel/error_rpm", rpmError);
+        telemetryM.addData("flywheel/power", flywheelMotor.getMotor().getPower());
+        telemetryM.addData("flywheel/amps", flywheelMotor.getMotor().getCurrent(CurrentUnit.AMPS));
     }
 }

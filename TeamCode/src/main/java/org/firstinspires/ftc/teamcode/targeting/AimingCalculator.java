@@ -11,7 +11,7 @@ public final class AimingCalculator {
     private static final double GOAL_Y = 144.0;
 
     private static final double FIELD_CENTER = 72.0;
-    private static final double OFFSET_MAX = 12.0;
+    private static final double OFFSET_MAX = 8.0;
 
     private AimingCalculator() {
         // static utility
@@ -24,7 +24,7 @@ public final class AimingCalculator {
     public static Pose computeDynamicGoalPose(Pose currentPose, Goal goal) {
         double baseGoalX = (goal == Goal.BLUE) ? BLUE_GOAL_X : RED_GOAL_X;
 
-        double targetX = computeDynamicGoalX(currentPose.getX(), baseGoalX);
+        double targetX = baseGoalX; //computeDynamicGoalX(currentPose.getX(), baseGoalX);
         double targetY = computeDynamicGoalY(currentPose.getY());
 
         return new Pose(targetX, targetY, 0.0);
@@ -71,6 +71,12 @@ public final class AimingCalculator {
     }
 
     private static double computeDynamicGoalY(double robotY) {
+
+        // Only shift goal when robot is past Y = 90
+        if (robotY <= 90.0) {
+            return GOAL_Y;
+        }
+
         double offsetFactor =
                 clamp(robotY - FIELD_CENTER, 0.0, FIELD_CENTER)
                         / FIELD_CENTER;

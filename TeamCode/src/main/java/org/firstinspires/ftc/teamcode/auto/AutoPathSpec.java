@@ -33,12 +33,12 @@ public final class AutoPathSpec {
         return this;
     }
 
-    public AutoPathSpec addCurve(Pose p0, Pose p1, Pose p2) {
+    public AutoPathSpec addCurve(Pose startPose, Pose controlPoint, Pose endPoint) {
         segments.add((builder, goal) -> builder.addPath(
                 new com.pedropathing.geometry.BezierCurve(
-                        FieldMirror.getPose(p0, goal),
-                        FieldMirror.getPose(p1, goal),
-                        FieldMirror.getPose(p2, goal)
+                        FieldMirror.getPose(startPose, goal),
+                        FieldMirror.getPose(controlPoint, goal),
+                        FieldMirror.getPose(endPoint, goal)
                 )
         ));
         return this;
