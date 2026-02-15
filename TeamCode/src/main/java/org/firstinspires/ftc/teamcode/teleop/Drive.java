@@ -1,158 +1,323 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
-import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.follower.Follower;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.geometry.Pose;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.config.GoalSelector;
+import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.pidTuning.LauncherFlywheelController;
-import org.firstinspires.ftc.teamcode.pidTuning.LauncherFlywheelTuning;
-import org.firstinspires.ftc.teamcode.targeting.AimingCalculator;
+import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
+import org.firstinspires.ftc.teamcode.subsystems.Paddle;
+import org.firstinspires.ftc.teamcode.subsystems.config.FlywheelConfig;
+import org.firstinspires.ftc.teamcode.targeting.DistanceProvider;
 
-@Configurable
-@TeleOp
-public class Drive extends OpMode {
-    private DriveController driveController;
-    private LauncherController launcher;
-    private PaddleController paddle;
+import java.util.Locale;
 
-    DcMotorEx intakeMotor;
+import dev.nextftc.core.commands.CommandManager;
+import dev.nextftc.core.components.BindingsComponent;
+import dev.nextftc.core.components.SubsystemComponent;
+import dev.nextftc.extensions.pedro.PedroComponent;
+import dev.nextftc.ftc.NextFTCOpMode;
+import dev.nextftc.ftc.components.BulkReadComponent;
 
-    DcMotor flywheelMotor;
-    Servo paddleServo;
-    LauncherFlywheelController controller;
+@TeleOp(name = "Drive", group = "teleop")
+public class Drive extends NextFTCOpMode {
 
-    DcMotorEx kickstandMotor;
+    public static Pose startingPose;
+    private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
+    private boolean slowMode = false;
+    private final double slowModeMultiplier = 0.2;
 
-    private int loopCount = 0;
+    private static final double STICK_DEAD_ZONE = 0.07;
 
-    public Follower follower;
+    private final DriveHoldController holdController = new DriveHoldController();
 
-    @Override
-    public void init() {
-        driveController = new DriveController(hardwareMap, telemetry);
-        paddle = new PaddleController(hardwareMap);
-        //launcher = new LauncherController(hardwareMap, telemetry);
-        telemetry.addData("Status", "Initialized");
-        telemetry.update();
+    // ------------------- Endgame timers -------------------
+    private final ElapsedTime matchTimer = new ElapsedTime();
+    private boolean didRumble145 = false;
+    private boolean didShutdown155 = false;
 
-        intakeMotor = hardwareMap.get(DcMotorEx.class, "intakeMotor");
-        //motor2 = hardwareMap.get(DcMotorEx.class, "motor2");
+    private static final double RUMBLE_TIME_SEC = 105.0;   // 1:45
+    private static final double SHUTDOWN_TIME_SEC = 115.0; // 1:55
 
-        paddleServo = hardwareMap.get(Servo.class, "paddleServo");
-        paddleServo.setPosition(.35);
-        //light = hardwareMap.get(Servo.class, "light");
+    public Drive() {
+        addComponents(
+                // NextFTC runtime plumbing
+                BindingsComponent.INSTANCE,
+                BulkReadComponent.INSTANCE,
+                CommandManager.INSTANCE,
 
-        kickstandMotor = hardwareMap.get(DcMotorEx.class, "kickstandMotor");
-        kickstandMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        kickstandMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+                // Subsystems
+                new SubsystemComponent(
+                        Flywheel.INSTANCE,
+                        Intake.INSTANCE,
+                        Kickstand.INSTANCE,
+                        Paddle.INSTANCE),
 
-        follower = Constants.createFollower(hardwareMap);
-//        follower.deactivateAllPIDFs();
-//        follower.activateTranslational();
-//        follower.activateHeading();
-
-        //launcher.runFast();
-
-//        follower.setStartingPose(new Pose(56, 8, Math.toRadians(180)));
-
-        DcMotorEx flywheelMotor = hardwareMap.get(DcMotorEx.class, "launcher");
-
-        // We are doing our own velocity control -> avoid built-in velocity mode.
-        flywheelMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-         controller = new LauncherFlywheelController(flywheelMotor);
+                // Pedro integration: creates + updates follower automatically
+                new PedroComponent(Constants::createFollower));
     }
 
     @Override
-    public void stop() {
-
+    public void onWaitForStart() {
+        super.onWaitForStart();
+        GoalSelector.update(gamepad1, telemetryM);
+        telemetryM.update();
     }
 
     @Override
-    public void start() {
-        //intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        LauncherFlywheelTuning.targetVelocity = 90;
+    public void onStartButtonPressed() {
+        startingPose = RobotConfig.getCurrentPose();
+        PedroComponent.follower().setStartingPose(startingPose == null ? new Pose() : startingPose);
+        holdController.resetForStart();
+
+        Flywheel.INSTANCE.enableAutoFromDistance();
+        Paddle.INSTANCE.lower.run();
+
+        matchTimer.reset();
+        didRumble145 = false;
+        didShutdown155 = false;
     }
 
-    private boolean isHolding = false;
-    private boolean hasMoved = false;
-
-    private double min1Speed = 5000;
-    private double min2Speed = 5000;
-    private Pose holdPosition;
-
     @Override
-    public void loop() {
-        controller.update();
+    public void onUpdate() {
+        telemetryM.update(telemetry);
 
-        //follower.update();
-        telemetry.addData("Status", "Running");
-/*
-        if (gamepad1.left_stick_x == 0 && gamepad1.left_stick_y == 0 && gamepad1.right_stick_x == 0 && gamepad1.right_stick_y == 0) {
-            driveController.updateDriveInput(false,0,0,0);
+        DriveInput input = readDriveInput();
 
-            if (!isHolding && hasMoved) {
-                telemetry.addData("holding", true);
-                //follower.holdPoint(follower.getPose());
-                isHolding = true;
+        holdController.handleDriverInput(input.driverInputDetected());
+        holdController.handleIdleSettleAndHold(input.driverInputDetected(), input.turn());
+        holdController.updateDriverInputState(input.driverInputDetected());
+
+        applyTeleopDrive(input);
+        holdController.handleAimHoldRequest(gamepad1.rightBumperWasPressed());
+        holdController.handleAutoFireWhenAimed();
+
+        // ------------------- Slow Mode toggle --------------------------------
+        if (gamepad1.leftBumperWasPressed()) {
+            slowMode = !slowMode;
+        }
+
+        // ------------------- Intake ------------------------------------------
+        if (gamepad1.aWasPressed()) {
+            Intake.INSTANCE.on();
+        } else if (gamepad1.bWasPressed()) {
+            Intake.INSTANCE.off();
+        }
+
+        // ------------------- Flywheel target velocity ------------------------
+        if (gamepad1.dpadUpWasPressed()) {
+            Flywheel.INSTANCE.setTargetRpm(FlywheelConfig.targetRpm + 50);
+        } else if (gamepad1.dpadDownWasPressed()) {
+            Flywheel.INSTANCE.setTargetRpm((Math.max(FlywheelConfig.targetRpm - 50, 0)));
+        }
+
+        // ------------------- Auto adjust speed for flywheel ------------------
+        if (gamepad1.dpadLeftWasPressed()) {
+            Flywheel.INSTANCE.disableAutoFromDistance();
+        } else if (gamepad1.dpadRightWasPressed()) {
+            Flywheel.INSTANCE.enableAutoFromDistance();
+        }
+
+        // ------------------- Force shot --------------------------------------
+        if (gamepad1.rightTriggerWasPressed()) {
+            Paddle.INSTANCE.feedOnce().run();
+        }
+
+        // ------------------- Kickstand ---------------------------------------
+        if (gamepad1.xWasPressed()) {
+            holdController.cancelHolds();
+            Kickstand.INSTANCE.deploy();
+        } else if (gamepad1.yWasPressed()) {
+            Kickstand.INSTANCE.retract();
+        }
+
+        double elapsedSec = matchTimer.seconds();
+
+        // Vibrate at 1:45 (once)
+        if (!didRumble145 && elapsedSec >= RUMBLE_TIME_SEC) {
+            gamepad1.rumbleBlips(5);
+            didRumble145 = true;
+        }
+
+        // Shutdown at 1:55 (once)
+        if (!didShutdown155 && elapsedSec >= SHUTDOWN_TIME_SEC) {
+            Flywheel.INSTANCE.stop();
+            Intake.INSTANCE.off();
+            didShutdown155 = true;
+        }
+
+        publishCompetitionTelemetry(input);
+    }
+
+    private DriveInput readDriveInput() {
+        return DriveInput.fromRaw(
+                -gamepad1.left_stick_y,
+                -gamepad1.left_stick_x,
+                -gamepad1.right_stick_x,
+                STICK_DEAD_ZONE);
+    }
+
+
+    private void applyTeleopDrive(DriveInput input) {
+        if (!input.driverInputDetected()) {
+            return;
+        }
+
+        double driveY = input.driveY();
+        double driveX = input.driveX();
+        double turn = input.turn();
+
+        if (slowMode) {
+            driveY *= slowModeMultiplier;
+            driveX *= slowModeMultiplier;
+            turn *= slowModeMultiplier;
+        }
+
+        PedroComponent.follower().setTeleOpDrive(driveY, driveX, turn, true);
+    }
+
+
+    private static final class DriveInput {
+        private final double driveY;
+        private final double driveX;
+        private final double turn;
+        private final boolean driverInputDetected;
+
+        private DriveInput(double driveY, double driveX, double turn, boolean driverInputDetected) {
+            this.driveY = driveY;
+            this.driveX = driveX;
+            this.turn = turn;
+            this.driverInputDetected = driverInputDetected;
+        }
+
+        private static DriveInput fromRaw(double rawDriveY, double rawDriveX, double rawTurn, double deadZone) {
+            double driveY = applyDeadZone(rawDriveY, deadZone);
+            double driveX = applyDeadZone(rawDriveX, deadZone);
+            double turn = applyDeadZone(rawTurn, deadZone);
+            boolean driverInputDetected = (Math.abs(driveY) > 0.0) || (Math.abs(driveX) > 0.0) || (Math.abs(turn) > 0.0);
+            return new DriveInput(driveY, driveX, turn, driverInputDetected);
+        }
+
+        private static double applyDeadZone(double value, double deadZone) {
+            if (Math.abs(value) < deadZone) {
+                return 0.0;
             }
-        } else {
-            isHolding = false;
-            hasMoved = true;
-            //follower.startTeleOpDrive();
-
-            double forward = -gamepad1.left_stick_y;
-            double strafe = -gamepad1.left_stick_x;
-            double turn = -gamepad1.right_stick_x;
-
-            //follower.setTeleOpDrive(forward, strafe, turn, true);
-            driveController.updateDriveInput(gamepad1.left_bumper, gamepad1.left_stick_y * -1, gamepad1.right_stick_x, gamepad1.left_stick_x);
-        }*/
-
-        driveController.updateDriveInput(gamepad1.left_bumper, gamepad1.left_stick_y * -1, gamepad1.right_stick_x, gamepad1.left_stick_x);
-
-
-        if (gamepad1.rightBumperWasPressed()) {
-           // Pose aimPose = AimingCalculator.computeAimPose(follower.getPose(), AimingCalculator.Goal.BLUE_GOAL);
-
-           // follower.holdPoint(aimPose);
-           // isHolding = true
-            //;
-
-            paddleServo.setPosition(.6);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            paddleServo.setPosition(.35);
+            return value;
         }
 
-        if (gamepad1.aWasPressed()){
-            intakeMotor.setPower(1);
-        } else if (gamepad1.bWasPressed()){
-            intakeMotor.setPower(0);
+        private double driveY() {
+            return driveY;
         }
 
-        if (gamepad1.leftBumperWasPressed()){
-            kickstandMotor.setTargetPosition(300);
-            kickstandMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-            //kickstandMotor.setPower(15);
+        private double driveX() {
+            return driveX;
         }
 
-        telemetry.addData("kickstandPosition", kickstandMotor.getCurrentPosition());
+        private double turn() {
+            return turn;
+        }
 
+        private boolean driverInputDetected() {
+            return driverInputDetected;
+        }
+    }
 
-        telemetry.update();
+    @Override
+    public void onStop() {
+        super.onStop();
+        Kickstand.INSTANCE.retract();
+    }
+
+    private void publishCompetitionTelemetry(DriveInput input) {
+        Pose currentPose = PedroComponent.follower().getPose();
+        double distanceToGoal = DistanceProvider.INSTANCE.getDistance();
+        double targetRpm = Flywheel.INSTANCE.getTargetRpm();
+        double currentRpm = Flywheel.INSTANCE.getCurrentRpm();
+        double rpmError = targetRpm - currentRpm;
+
+        boolean headingGood = holdController.isHeadingGood(currentPose);
+        boolean anchorGood = holdController.isAnchorGood(currentPose);
+        boolean flywheelReady = Flywheel.INSTANCE.isAtSpeed();
+
+        telemetryM.debug("=== DRIVE ===");
+        telemetryM.debug(String.format(
+                Locale.US,
+                "Mode: %s  Slow: %s  Input: %s",
+                holdController.activeDriveMode(),
+                asStatus(slowMode),
+                asStatus(input.driverInputDetected())));
+
+        telemetryM.debug(String.format(
+                Locale.US,
+                "Pose: X:%6.2f  Y:%6.2f  H:%6.1f°",
+                currentPose.getX(),
+                currentPose.getY(),
+                Math.toDegrees(currentPose.getHeading())));
+
+        if (holdController.isAimRequested()) {
+            Pose aimPose = holdController.getAimPose();
+            telemetryM.debug(String.format(
+                    Locale.US,
+                    "Aim:  X:%6.2f  Y:%6.2f  H:%6.1f°",
+                    aimPose.getX(),
+                    aimPose.getY(),
+                    Math.toDegrees(aimPose.getHeading())));
+        }
+
+        telemetryM.debug("");
+        telemetryM.debug("=== LAUNCHER ===");
+        telemetryM.debug(String.format(
+                Locale.US,
+                "Shot Distance: %5.1fin",
+                distanceToGoal));
+        telemetryM.debug(String.format(
+                Locale.US,
+                "RPM: %4.0f/%4.0f  Err: %+5.0f",
+                currentRpm,
+                targetRpm,
+                rpmError));
+
+        telemetryM.debug("");
+
+        telemetryM.debug(String.format(
+                Locale.US,
+                "%s Aim requested    %s Flywheel speed",
+                asStatus(holdController.isAimRequested()),
+                asStatus(flywheelReady)));
+        telemetryM.debug(String.format(
+                Locale.US,
+                "%s Heading                %s Anchor",
+                asStatus(headingGood),
+                asStatus(anchorGood)));
+
+        telemetryM.debug("");
+        telemetryM.debug("Blocked by: " + holdController.firstBlockingCondition(flywheelReady, currentPose));
+
+        telemetryM.debug("");
+        telemetryM.debug("Holds:");
+        telemetryM.debug(String.format("%s Idle                %s Aiming",
+                asStatus(holdController.isIdleHoldActive()),
+                asStatus(holdController.isAimHoldActive())));
+
+        telemetryM.debug("");
+        telemetryM.debug("=== KICKSTAND ===");
+        telemetryM.debug("Kickstand position: " + hardwareMap.get(DcMotorEx.class, "kickstand").getCurrentPosition());
+
+        telemetryM.debug("");
+        telemetryM.debug("*** END OF DEBUG ***");
+        telemetryM.debug("");
+        Flywheel.INSTANCE.publishTelemetry(telemetryM);
+    }
+
+    private String asStatus(boolean ready) {
+        return ready ? "[✓]" : "[   ]";
     }
 }

@@ -1,0 +1,146 @@
+package org.firstinspires.ftc.teamcode.pedroPathing;
+
+import com.bylazar.field.FieldManager;
+import com.bylazar.field.PanelsField;
+import com.bylazar.field.Style;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Vector;
+import com.pedropathing.util.PoseHistory;
+import com.pedropathing.paths.Path;
+
+/**
+ * Panels field drawing utilities for Pedro follower.
+ */
+public final class Drawing {
+    public static final double ROBOT_RADIUS = 9;
+
+    private static final FieldManager panelsField =
+            PanelsField.INSTANCE.getField();
+
+    private static final Style robotLook =
+            new Style("", "#3F51B5", 0.75);
+
+    private static final Style historyLook =
+            new Style("", "#4CAF50", 0.75);
+
+    private Drawing() {}
+
+    /** Must be called once per OpMode before drawing. */
+    public static void init() {
+        panelsField.setOffsets(
+                PanelsField.INSTANCE.getPresets().getPEDRO_PATHING()
+        );
+    }
+
+    /** Draw only the robot pose. */
+    public static void drawOnlyCurrent(Pose pose) {
+        drawRobot(pose, robotLook);
+        sendPacket();
+    }
+
+    /** Draw robot, path, and pose history. */
+    public static void drawDebug(Follower follower) {
+
+        if (follower.getCurrentPath() != null) {
+            drawPath(follower.getCurrentPath(), robotLook);
+
+            Pose closestPoint =
+                    follower.getPointFromPath(
+                            follower.getCurrentPath()
+                                    .getClosestPointTValue()
+                    );
+
+            drawRobot(
+                    new Pose(
+                            closestPoint.getX(),
+                            closestPoint.getY(),
+                            follower.getCurrentPath()
+                                    .getHeadingGoal(
+                                            follower.getCurrentPath()
+                                                    .getClosestPointTValue()
+                                    )
+                    ),
+                    robotLook
+            );
+        }
+
+        drawPoseHistory(follower.getPoseHistory(), historyLook);
+        drawRobot(follower.getPose(), historyLook);
+        sendPacket();
+    }
+
+    public static void drawRobot(Pose pose) {
+        drawRobot(pose, robotLook);
+    }
+
+    public static void drawRobot(Pose pose, Style style) {
+
+        if (pose == null
+                || Double.isNaN(pose.getX())
+                || Double.isNaN(pose.getY())
+                || Double.isNaN(pose.getHeading())) {
+            return;
+        }
+
+        panelsField.setStyle(style);
+
+        // body
+        panelsField.moveCursor(pose.getX(), pose.getY());
+        panelsField.circle(ROBOT_RADIUS);
+
+        // heading line
+        Vector v = pose.getHeadingAsUnitVector();
+        v.setMagnitude(ROBOT_RADIUS);
+
+        double x1 = pose.getX() + v.getXComponent() / 2.0;
+        double y1 = pose.getY() + v.getYComponent() / 2.0;
+        double x2 = pose.getX() + v.getXComponent();
+        double y2 = pose.getY() + v.getYComponent();
+
+        panelsField.moveCursor(x1, y1);
+        panelsField.line(x2, y2);
+    }
+
+    public static void drawPoseHistory(
+            PoseHistory poseTracker,
+            Style style
+    ) {
+        panelsField.setStyle(style);
+
+        int size = poseTracker.getXPositionsArray().length;
+
+        for (int i = 0; i < size - 1; i++) {
+            panelsField.moveCursor(
+                    poseTracker.getXPositionsArray()[i],
+                    poseTracker.getYPositionsArray()[i]
+            );
+
+            panelsField.line(
+                    poseTracker.getXPositionsArray()[i + 1],
+                    poseTracker.getYPositionsArray()[i + 1]
+            );
+        }
+    }
+
+    public static void drawPath(Path path, Style style) {
+
+        double[][] points = path.getPanelsDrawingPoints();
+
+        for (int i = 0; i < points[0].length; i++) {
+            for (int j = 0; j < points.length; j++) {
+                if (Double.isNaN(points[j][i])) {
+                    points[j][i] = 0;
+                }
+            }
+        }
+
+        panelsField.setStyle(style);
+        panelsField.moveCursor(points[0][0], points[0][1]);
+        panelsField.line(points[1][0], points[1][1]);
+    }
+
+    public static void sendPacket() {
+        panelsField.update();
+    }
+}
