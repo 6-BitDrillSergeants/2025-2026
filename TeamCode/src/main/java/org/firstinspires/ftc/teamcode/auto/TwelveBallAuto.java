@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.subsystems.PosePublisher;
 import org.firstinspires.ftc.teamcode.subsystems.commands.WaitUntilCommand;
 
 import dev.nextftc.core.commands.Command;
+import dev.nextftc.core.commands.delays.Delay;
 import dev.nextftc.core.commands.groups.SequentialGroup;
 import dev.nextftc.core.commands.utility.InstantCommand;
 import dev.nextftc.core.components.SubsystemComponent;
@@ -31,7 +32,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
         //private final Pose farShootingPose = new Pose(55, 10, Math.toRadians(100));
         private final Pose shortShootingPose = new Pose(55, 88, Math.toRadians(135));
 
-        private final Pose endPose = new Pose(65, 99);
+        private final Pose endPose = new Pose(44, 122);
 
         public final AutoPathSpec shootPreloadPath = new AutoPathSpec()
                 .addLine(blueStartingPose,
@@ -120,8 +121,10 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 // Shoot preloaded balls
                 shootCommand(),
+                new Delay(0.5),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
+                new Delay(0.5),
                 shootCommand(),
 
                 // Collect balls 4-6 and drive to shooting position
@@ -133,8 +136,10 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 // Shoot balls 3-6
                 shootCommand(),
+                new Delay(0.5),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
+                new Delay(0.5),
                 shootCommand(),
 
                 //Collect balls 7-9
@@ -147,8 +152,10 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 //Shoot balls 7-9
                 shootCommand(),
+                new Delay(0.5),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
+                new Delay(0.5),
                 shootCommand(),
 
                 //Collect balls 10-12
@@ -160,8 +167,10 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 // shoot balls 10-12
                 shootCommand(),
+                new Delay(0.5),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
+                new Delay(0.5),
                 shootCommand(),
 
                 // Stop flywheel after shooting

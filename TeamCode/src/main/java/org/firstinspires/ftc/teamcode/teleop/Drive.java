@@ -45,7 +45,7 @@ public class Drive extends NextFTCOpMode {
     private boolean didShutdown155 = false;
 
     private static final double RUMBLE_TIME_SEC = 105.0;   // 1:45
-    private static final double SHUTDOWN_TIME_SEC = 115.0; // 1:55
+    private static final double SHUTDOWN_TIME_SEC = 500.0; // 1:55 is 115.0, has been increased for testing
 
     public Drive() {
         addComponents(
@@ -126,6 +126,11 @@ public class Drive extends NextFTCOpMode {
             Flywheel.INSTANCE.enableAutoFromDistance();
         }
 
+        // ------------------- Force Disable Flywheel --------------------------
+        if (gamepad1.leftTriggerWasPressed()) {
+            Flywheel.INSTANCE.stop();
+        }
+
         // ------------------- Force shot --------------------------------------
         if (gamepad1.rightTriggerWasPressed()) {
             Paddle.INSTANCE.feedOnce().run();
@@ -147,7 +152,7 @@ public class Drive extends NextFTCOpMode {
             didRumble145 = true;
         }
 
-        // Shutdown at 1:55 (once)
+        // Shutdown at 1:55 (once) UPDATED TO 500 SECONDS
         if (!didShutdown155 && elapsedSec >= SHUTDOWN_TIME_SEC) {
             Flywheel.INSTANCE.stop();
             Intake.INSTANCE.off();
