@@ -28,16 +28,20 @@ import dev.nextftc.ftc.NextFTCOpMode;
 @Autonomous(name = "Shoot 12 balls", group = "auto")
 public class TwelveBallAuto extends NextFTCOpMode {
     public final class AutoPaths {
+
+        private final double shootingAngle = 140; //deg
         private final Pose blueStartingPose = new Pose(55, 8, Math.toRadians(90));
         //private final Pose farShootingPose = new Pose(55, 10, Math.toRadians(100));
-        private final Pose shortShootingPose = new Pose(55, 88, Math.toRadians(135));
+        private final Pose shortShootingPose = new Pose(55, 88, Math.toRadians(shootingAngle));
+
+
 
         private final Pose endPose = new Pose(44, 122);
 
         public final AutoPathSpec shootPreloadPath = new AutoPathSpec()
                 .addLine(blueStartingPose,
                         shortShootingPose)
-                .linearHeading(Math.toRadians(90), Math.toRadians(135));
+                .linearHeading(Math.toRadians(90), Math.toRadians(shootingAngle));
 
         public final AutoPathSpec collect4_6 = new AutoPathSpec()
                 .addCurve(
@@ -53,12 +57,12 @@ public class TwelveBallAuto extends NextFTCOpMode {
                         new Pose(71, 31),
                         shortShootingPose
                 )
-                .linearHeading(Math.toRadians(180), Math.toRadians(135));
+                .linearHeading(Math.toRadians(180), Math.toRadians(shootingAngle));
 
         public final AutoPathSpec collect7_9a = new AutoPathSpec()
                 .addLine(shortShootingPose,
                         new Pose(47, 60))
-                .linearHeading(Math.toRadians(135), Math.toRadians(180));
+                .linearHeading(Math.toRadians(shootingAngle), Math.toRadians(180));
 
         public final AutoPathSpec collect7_9b = new AutoPathSpec()
                 .addLine(new Pose(47, 60),
@@ -69,7 +73,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
                 .addCurve(new Pose(24, 58),
                         new Pose(71, 31),
                         shortShootingPose)
-                .linearHeading(Math.toRadians(180), Math.toRadians(135));
+                .linearHeading(Math.toRadians(180), Math.toRadians(shootingAngle));
 
         public final AutoPathSpec collect10_12 = new AutoPathSpec()
                 .addLine(shortShootingPose,
@@ -79,7 +83,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
         public final AutoPathSpec shoot10_12 = new AutoPathSpec()
                 .addLine(new Pose(19, 80),
                         shortShootingPose)
-                .linearHeading(Math.toRadians(180), Math.toRadians(135));
+                .linearHeading(Math.toRadians(180), Math.toRadians(shootingAngle));
 
         public final AutoPathSpec moveOffLine = new AutoPathSpec()
                 .addLine(shortShootingPose,
@@ -112,6 +116,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
         return new SequentialGroup(
                 Paddle.INSTANCE.lower,
+                new Delay(0.3),
 
                 // Enable distance-based flywheel RPM
                 new InstantCommand(Flywheel.INSTANCE::enableAutoFromDistance),
@@ -121,7 +126,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 // Shoot preloaded balls
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.8),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
                 new Delay(0.5),
