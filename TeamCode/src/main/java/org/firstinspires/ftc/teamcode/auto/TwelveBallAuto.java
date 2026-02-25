@@ -6,10 +6,11 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.GoalConfig;
 import org.firstinspires.ftc.teamcode.config.GoalSelector;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.AutoConstants;
 import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Paddle;
@@ -27,16 +28,18 @@ import dev.nextftc.ftc.NextFTCOpMode;
 
 @Autonomous(name = "Shoot 12 balls", group = "auto")
 public class TwelveBallAuto extends NextFTCOpMode {
+
+    private static final double AUTO_LENGTH_SEC = 30.0;
+    private static final double FLYWHEEL_CUTOFF_REMAINING_SEC = 1.0;
+
+    private final ElapsedTime autoTimer = new ElapsedTime();
+    private boolean didFlywheelCutoff = false;
+
     public final class AutoPaths {
 
         private final double shootingAngle = 140; //deg
         private final Pose blueStartingPose = new Pose(55, 8, Math.toRadians(90));
-        //private final Pose farShootingPose = new Pose(55, 10, Math.toRadians(100));
         private final Pose shortShootingPose = new Pose(55, 88, Math.toRadians(shootingAngle));
-
-
-
-        private final Pose endPose = new Pose(44, 122);
 
         public final AutoPathSpec shootPreloadPath = new AutoPathSpec()
                 .addLine(blueStartingPose,
@@ -47,13 +50,13 @@ public class TwelveBallAuto extends NextFTCOpMode {
                 .addCurve(
                         shortShootingPose,
                         new Pose(71, 31),
-                        new Pose(24, 33)
+                        new Pose(22, 33)
                 )
                 .tangentHeading();
 
         public final AutoPathSpec shoot4_6 = new AutoPathSpec()
                 .addCurve(
-                        new Pose(24, 33),
+                        new Pose(22, 33),
                         new Pose(71, 31),
                         shortShootingPose
                 )
@@ -66,29 +69,24 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
         public final AutoPathSpec collect7_9b = new AutoPathSpec()
                 .addLine(new Pose(47, 60),
-                        new Pose(24, 58))
+                        new Pose(22, 58))
                 .tangentHeading();
 
         public final AutoPathSpec shoot7_9 = new AutoPathSpec()
-                .addCurve(new Pose(24, 58),
+                .addCurve(new Pose(22, 58),
                         new Pose(71, 31),
                         shortShootingPose)
                 .linearHeading(Math.toRadians(180), Math.toRadians(shootingAngle));
 
         public final AutoPathSpec collect10_12 = new AutoPathSpec()
                 .addLine(shortShootingPose,
-                        new Pose(24, 80))
+                        new Pose(22, 80))
                 .constantHeading(Math.toRadians(180));
 
         public final AutoPathSpec shoot10_12 = new AutoPathSpec()
                 .addLine(new Pose(19, 80),
-                        shortShootingPose)
-                .linearHeading(Math.toRadians(180), Math.toRadians(shootingAngle));
-
-        public final AutoPathSpec moveOffLine = new AutoPathSpec()
-                .addLine(shortShootingPose,
-                        endPose)
-                .constantHeading(135);
+                        new Pose(57, 100))
+                .linearHeading(Math.toRadians(180), Math.toRadians(145));
 
         public Pose getStartingPose() {
             return FieldMirror.getPose(blueStartingPose, GoalConfig.goal);
@@ -105,8 +103,39 @@ public class TwelveBallAuto extends NextFTCOpMode {
                         Intake.INSTANCE,
                         PosePublisher.INSTANCE
                 ),
-                new PedroComponent(Constants::createFollower)
+                new PedroComponent(AutoConstants::createFollower)
         );
+    }
+
+    @Override
+    public void onInit() {
+        super.onInit();
+        Paddle.INSTANCE.lower.run();
+        Flywheel.INSTANCE.disableAutoFromDistance();
+        Flywheel.INSTANCE.stop();
+        didFlywheelCutoff = false;
+    }
+
+    @Override
+    public void onStartButtonPressed() {
+        autoTimer.reset();
+        didFlywheelCutoff = false;
+
+        autoRoutine().invoke();
+    }
+
+    @Override
+    public void onUpdate() {
+        super.onUpdate();
+
+        double elapsed = autoTimer.seconds();
+        double remaining = AUTO_LENGTH_SEC - elapsed;
+
+        if (!didFlywheelCutoff && remaining <= FLYWHEEL_CUTOFF_REMAINING_SEC) {
+            Flywheel.INSTANCE.stop();
+            Intake.INSTANCE.off();
+            didFlywheelCutoff = true;
+        }
     }
 
     private Command autoRoutine() {
@@ -116,7 +145,6 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
         return new SequentialGroup(
                 Paddle.INSTANCE.lower,
-                new Delay(0.3),
 
                 // Enable distance-based flywheel RPM
                 new InstantCommand(Flywheel.INSTANCE::enableAutoFromDistance),
@@ -126,10 +154,10 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 // Shoot preloaded balls
                 shootCommand(),
-                new Delay(0.8),
                 new InstantCommand(Intake.INSTANCE::on),
+                new Delay(0.25),
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.25),
                 shootCommand(),
 
                 // Collect balls 4-6 and drive to shooting position
@@ -141,10 +169,10 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 // Shoot balls 3-6
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.25),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.25),
                 shootCommand(),
 
                 //Collect balls 7-9
@@ -157,10 +185,10 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 //Shoot balls 7-9
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.25),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.25),
                 shootCommand(),
 
                 //Collect balls 10-12
@@ -172,25 +200,28 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
                 // shoot balls 10-12
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.25),
                 new InstantCommand(Intake.INSTANCE::on),
                 shootCommand(),
-                new Delay(0.5),
+                new Delay(0.25),
                 shootCommand(),
 
                 // Stop flywheel after shooting
                 new InstantCommand(Flywheel.INSTANCE::stop),
-                new InstantCommand(Intake.INSTANCE::off),
-
-                // Move off the line
-                new FollowPath(paths.moveOffLine.build(follower(), GoalConfig.goal))
+                new InstantCommand(Intake.INSTANCE::off)
         );
     }
 
-    private SequentialGroup shootCommand() {
-        return new SequentialGroup(
-                new WaitUntilCommand(Flywheel.INSTANCE::isAtSpeed),
-                Paddle.INSTANCE.feedOnce());
+    private Command shootCommand() {
+        if (!didFlywheelCutoff) {
+            return new SequentialGroup(
+                    new WaitUntilCommand(Flywheel.INSTANCE::isAtSpeed),
+                    Paddle.INSTANCE.feedOnce());
+        }
+
+        return new InstantCommand(() -> {
+            // do nothing; time expired
+        });
     }
 
     @Override
@@ -198,10 +229,5 @@ public class TwelveBallAuto extends NextFTCOpMode {
         super.onWaitForStart();
         GoalSelector.update(gamepad1, telemetryM);
         telemetryM.update(telemetry);
-    }
-
-    @Override
-    public void onStartButtonPressed() {
-        autoRoutine().invoke();
     }
 }

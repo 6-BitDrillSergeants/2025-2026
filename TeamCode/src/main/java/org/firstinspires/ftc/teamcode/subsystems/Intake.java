@@ -26,6 +26,10 @@ public final class Intake implements Subsystem {
         intakeMotor.setPower(IntakeConfig.offPower);
     }
 
+    public boolean isOn() {
+        return intakeMotor.getPower() > 0.0;
+    }
+
     @Override
     public void periodic() {
         // No periodic logic needed.

@@ -7,9 +7,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.config.GoalSelector;
 import org.firstinspires.ftc.teamcode.config.RobotConfig;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.TeleopConstants;
 import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
@@ -35,7 +34,7 @@ public class Drive extends NextFTCOpMode {
     private boolean slowMode = false;
     private final double slowModeMultiplier = 0.2;
 
-    private static final double STICK_DEAD_ZONE = 0.07;
+    private static final double STICK_DEAD_ZONE = .05;
 
     private final DriveHoldController holdController = new DriveHoldController();
 
@@ -62,14 +61,14 @@ public class Drive extends NextFTCOpMode {
                         Paddle.INSTANCE),
 
                 // Pedro integration: creates + updates follower automatically
-                new PedroComponent(Constants::createFollower));
+                new PedroComponent(TeleopConstants::createFollower));
     }
 
     @Override
-    public void onWaitForStart() {
-        super.onWaitForStart();
-        GoalSelector.update(gamepad1, telemetryM);
-        telemetryM.update();
+    public void onInit() {
+        super.onInit();
+        Flywheel.INSTANCE.disableAutoFromDistance();
+        Flywheel.INSTANCE.stop();
     }
 
     @Override
@@ -106,10 +105,12 @@ public class Drive extends NextFTCOpMode {
         }
 
         // ------------------- Intake ------------------------------------------
-        if (gamepad1.aWasPressed()) {
-            Intake.INSTANCE.on();
-        } else if (gamepad1.bWasPressed()) {
-            Intake.INSTANCE.off();
+        if (gamepad1.leftTriggerWasPressed()) {
+            if (Intake.INSTANCE.isOn()) {
+                Intake.INSTANCE.off();
+            } else {
+                Intake.INSTANCE.on();
+            }
         }
 
         // ------------------- Flywheel target velocity ------------------------
@@ -124,11 +125,6 @@ public class Drive extends NextFTCOpMode {
             Flywheel.INSTANCE.disableAutoFromDistance();
         } else if (gamepad1.dpadRightWasPressed()) {
             Flywheel.INSTANCE.enableAutoFromDistance();
-        }
-
-        // ------------------- Force Disable Flywheel --------------------------
-        if (gamepad1.leftTriggerWasPressed()) {
-            Flywheel.INSTANCE.stop();
         }
 
         // ------------------- Force shot --------------------------------------
@@ -311,6 +307,11 @@ public class Drive extends NextFTCOpMode {
         telemetryM.debug(String.format("%s Idle                %s Aiming",
                 asStatus(holdController.isIdleHoldActive()),
                 asStatus(holdController.isAimHoldActive())));
+
+        telemetryM.debug("");
+        telemetryM.debug("=== Intake ===");
+        telemetryM.debug("Intake Power: " + hardwareMap.get(DcMotorEx.class, "intake").getPower());
+
 
         telemetryM.debug("");
         telemetryM.debug("=== KICKSTAND ===");

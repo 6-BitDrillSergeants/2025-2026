@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.config.GoalConfig;
 import org.firstinspires.ftc.teamcode.config.GoalSelector;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.AutoConstants;
 import org.firstinspires.ftc.teamcode.subsystems.PosePublisher;
 
 import dev.nextftc.core.commands.Command;
@@ -43,7 +43,7 @@ public class DriveOffLine extends NextFTCOpMode {
                 new SubsystemComponent(
                         PosePublisher.INSTANCE
                 ),
-                new PedroComponent(Constants::createFollower)
+                new PedroComponent(AutoConstants::createFollower)
         );
     }
 

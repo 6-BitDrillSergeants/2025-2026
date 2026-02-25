@@ -16,7 +16,7 @@ final class DriveHoldController {
     private static final double IDLE_SETTLE_SEC = 0.15;
     private static final double TURN_CANCEL_THRESHOLD = 0.02;
 
-    private static final double AIM_HEADING_TOL_RAD = Math.toRadians(2.0);
+    private static final double AIM_HEADING_TOL_RAD = Math.toRadians(3.0);
     private static final double AIM_ANCHOR_TOL_IN = 2.0;
 
     private Pose aimPose = new Pose();
