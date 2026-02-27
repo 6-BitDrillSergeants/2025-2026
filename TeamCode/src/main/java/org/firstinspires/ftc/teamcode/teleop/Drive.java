@@ -6,8 +6,10 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.config.GoalSelector;
 import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.pedroPathing.TeleopConstants;
 import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
@@ -34,7 +36,7 @@ public class Drive extends NextFTCOpMode {
 
     private boolean slowMode = false;
 
-    private static final double STICK_DEAD_ZONE = .05;
+    //private static final double STICK_DEAD_ZONE = .05;
 
     private DriveHoldController holdController;
 
@@ -46,21 +48,34 @@ public class Drive extends NextFTCOpMode {
     private static final double RUMBLE_TIME_SEC = 105.0;   // 1:45
     private static final double SHUTDOWN_TIME_SEC = 500.0; // 1:55 is 115.0, has been increased for testing
 
+    private final PedroComponent pedroComponent = new PedroComponent(TeleopConstants::createFollower);
+
     private Flywheel flywheel;
     private Paddle paddle;
     private Intake intake;
     private Kickstand kickstand;
     private Follower follower;
     private DistanceProvider distanceProvider;
+    private Servo light;
+
+    public Drive() {
+        // Register components BEFORE init runs
+        addComponents(
+                pedroComponent
+        );
+    }
 
     @Override
     public void onInit() {
         super.onInit();
 
+
+        light = hardwareMap.get(Servo.class, "light");
+
         intake = new Intake();
         paddle = new Paddle();
         kickstand = new Kickstand();
-        follower = TeleopConstants.createFollower(hardwareMap);
+        follower = PedroComponent.follower();
         distanceProvider = new DistanceProvider(follower);
         flywheel = new Flywheel(distanceProvider);
         holdController = new DriveHoldController(follower, flywheel, paddle);
@@ -76,10 +91,14 @@ public class Drive extends NextFTCOpMode {
                         flywheel,
                         intake,
                         kickstand,
-                        paddle),
+                        paddle));
+    }
 
-                // Pedro integration: creates + updates follower automatically
-                new PedroComponent((hardwareDevices -> follower)));
+    @Override
+    public void onWaitForStart() {
+        super.onWaitForStart();
+        GoalSelector.update(gamepad1, light, telemetryM);
+        telemetryM.update(telemetry);
     }
 
     @Override
@@ -219,9 +238,9 @@ public class Drive extends NextFTCOpMode {
         }
 
         private static double applyDeadZone(double value) {
-            if (Math.abs(value) < Drive.STICK_DEAD_ZONE) {
+            /*if (Math.abs(value) < Drive.STICK_DEAD_ZONE) {
                 return 0.0;
-            }
+            }*/
             return value;
         }
 

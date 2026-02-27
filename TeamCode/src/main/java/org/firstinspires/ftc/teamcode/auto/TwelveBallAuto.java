@@ -5,6 +5,7 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.config.GoalConfig;
@@ -29,7 +30,7 @@ import dev.nextftc.ftc.NextFTCOpMode;
 @Autonomous(name = "Shoot 12 balls", group = "auto")
 public class TwelveBallAuto extends NextFTCOpMode {
 
-    private static final double AUTO_LENGTH_SEC = 30.0;
+    private static final double AUTO_LENGTH_SEC = 35.0;
     private static final double FLYWHEEL_CUTOFF_REMAINING_SEC = 1.0;
 
     private final ElapsedTime autoTimer = new ElapsedTime();
@@ -37,7 +38,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
     public final static class AutoPaths {
 
-        private final double shootingAngle = 140; //deg
+        private final double shootingAngle = 130; //deg
         private final Pose blueStartingPose = new Pose(55, 8, Math.toRadians(90));
         private final Pose shortShootingPose = new Pose(55, 88, Math.toRadians(shootingAngle));
 
@@ -95,29 +96,45 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
     private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
+    private final PedroComponent pedroComponent = new PedroComponent(AutoConstants::createFollower);
+
     private Flywheel flywheel;
     private Paddle paddle;
     private Intake intake;
     private Follower follower;
+    private Servo light;
+
+    public TwelveBallAuto() {
+        // Register components BEFORE init runs
+        addComponents(
+                pedroComponent
+        );
+    }
 
     @Override
     public void onInit() {
         super.onInit();
 
+        light = hardwareMap.get(Servo.class, "light");
+
+        // Now PedroComponent has been initialized -> follower exists
+        follower = PedroComponent.follower();
+
         paddle = new Paddle();
         intake = new Intake();
-        follower = AutoConstants.createFollower(hardwareMap);
+
         DistanceProvider distanceProvider = new DistanceProvider(follower);
         flywheel = new Flywheel(distanceProvider);
 
+        // If your SubsystemComponent needs the real subsystem instances,
+        // create it here instead of in the constructor:
         addComponents(
                 new SubsystemComponent(
                         flywheel,
                         paddle,
                         intake,
                         new PosePublisher(follower)
-                ),
-                new PedroComponent((hardwareDevices -> follower))
+                )
         );
 
         paddle.lower.run();
@@ -137,6 +154,9 @@ public class TwelveBallAuto extends NextFTCOpMode {
 
         double elapsed = autoTimer.seconds();
         double remaining = AUTO_LENGTH_SEC - elapsed;
+
+        telemetryM.addData("remaining", remaining);
+        telemetryM.update();
 
         if (!didFlywheelCutoff && remaining <= FLYWHEEL_CUTOFF_REMAINING_SEC) {
             flywheel.stop();
@@ -234,7 +254,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
     @Override
     public void onWaitForStart() {
         super.onWaitForStart();
-        GoalSelector.update(gamepad1, telemetryM);
+        GoalSelector.update(gamepad1, light, telemetryM);
         telemetryM.update(telemetry);
     }
 }

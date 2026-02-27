@@ -5,6 +5,7 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.GoalConfig;
 import org.firstinspires.ftc.teamcode.config.GoalSelector;
@@ -45,29 +46,45 @@ public class ThreeBallAuto extends NextFTCOpMode {
 
     private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
+    private Servo light;
+    private final PedroComponent pedroComponent = new PedroComponent(AutoConstants::createFollower);
+
     private Flywheel flywheel;
     private Paddle paddle;
     private Intake intake;
     private Follower follower;
 
+    public ThreeBallAuto() {
+        // Register components BEFORE init runs
+        addComponents(
+                pedroComponent
+        );
+    }
+
     @Override
     public void onInit() {
         super.onInit();
 
+        light = hardwareMap.get(Servo.class, "light");
+
+        // Now PedroComponent has been initialized -> follower exists
+        follower = PedroComponent.follower();
+
         paddle = new Paddle();
         intake = new Intake();
-        follower = AutoConstants.createFollower(hardwareMap);
+
         DistanceProvider distanceProvider = new DistanceProvider(follower);
         flywheel = new Flywheel(distanceProvider);
 
+        // If your SubsystemComponent needs the real subsystem instances,
+        // create it here instead of in the constructor:
         addComponents(
                 new SubsystemComponent(
                         flywheel,
                         paddle,
                         intake,
                         new PosePublisher(follower)
-                ),
-                new PedroComponent((hardwareDevices -> follower))
+                )
         );
 
         paddle.lower.run();
@@ -110,7 +127,7 @@ public class ThreeBallAuto extends NextFTCOpMode {
     @Override
     public void onWaitForStart() {
         super.onWaitForStart();
-        GoalSelector.update(gamepad1, telemetryM);
+        GoalSelector.update(gamepad1, light, telemetryM);
         telemetryM.update(telemetry);
     }
 

@@ -5,6 +5,7 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.config.GoalConfig;
 import org.firstinspires.ftc.teamcode.config.GoalSelector;
@@ -23,7 +24,7 @@ public class DriveOffLine extends NextFTCOpMode {
     public final static class AutoPaths {
         private final Pose blueStartingPose = new Pose(55, 8, Math.toRadians(90));
 
-        private final Pose endPose = new Pose(55, 20);
+        private final Pose endPose = new Pose(55, 24);
 
         public final AutoPathSpec movePath = new AutoPathSpec()
                 .addLine(blueStartingPose,
@@ -37,19 +38,31 @@ public class DriveOffLine extends NextFTCOpMode {
 
     private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
+    private Servo light;
+
+    private final PedroComponent pedroComponent = new PedroComponent(AutoConstants::createFollower);
+
+
     private Follower follower;
+
+    public DriveOffLine() {
+        // Register components BEFORE init runs
+        addComponents(
+                pedroComponent
+        );
+    }
 
     @Override
     public void onInit() {
         super.onInit();
 
-        follower = AutoConstants.createFollower(hardwareMap);
+        follower = PedroComponent.follower();
+        light = hardwareMap.get(Servo.class, "light");
 
         addComponents(
                 new SubsystemComponent(
                         new PosePublisher(follower)
-                ),
-                new PedroComponent((hardwareDevices -> follower))
+                )
         );
     }
 
@@ -67,7 +80,7 @@ public class DriveOffLine extends NextFTCOpMode {
     @Override
     public void onWaitForStart() {
         super.onWaitForStart();
-        GoalSelector.update(gamepad1, telemetryM);
+        GoalSelector.update(gamepad1, light, telemetryM);
         telemetryM.update(telemetry);
     }
 

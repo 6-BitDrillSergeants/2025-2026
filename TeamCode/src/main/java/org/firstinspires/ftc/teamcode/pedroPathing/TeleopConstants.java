@@ -27,8 +27,8 @@ public class TeleopConstants {
             .useSecondaryTranslationalPIDF(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.2,0,0, 0.3))
             .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(0.03,0,0,0.005))
-            .headingPIDFCoefficients(new PIDFCoefficients(4,0,0,0.25))
-            .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(2,0,0,0.01))
+            .headingPIDFCoefficients(new PIDFCoefficients(2,0,0,0.25))
+            .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(.5,0,0,0.01))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.01,0,0,0.5,0.3))
             .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(0.002,0,0,0.5,0.2));
 

@@ -30,6 +30,7 @@ public final class Flywheel implements Subsystem {
 
     public Flywheel(DistanceProvider distanceProvider) {
         this.distanceProvider = distanceProvider;
+        rebuildController();
     }
 
     private ControlSystem controller;
@@ -73,7 +74,7 @@ public final class Flywheel implements Subsystem {
     }
 
     public boolean isAtSpeed() {
-        return abs(FlywheelConfig.targetRpm - ticksPerSecondToRpm(flywheelMotor.getVelocity())) <= FlywheelConfig.toleranceRpm;
+        return abs(targetRpm - ticksPerSecondToRpm(flywheelMotor.getVelocity())) <= FlywheelConfig.toleranceRpm;
     }
 
     public void stop() {
@@ -85,8 +86,6 @@ public final class Flywheel implements Subsystem {
     @Override
     public void initialize() {
         Subsystem.super.initialize();
-        rebuildController();
-
         flywheelMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
@@ -95,7 +94,7 @@ public final class Flywheel implements Subsystem {
         // When tuning, rebuild the controller in case any config variables changed
         // rebuildController();
 
-        double targetRpm = FlywheelConfig.targetRpm;
+        targetRpm = FlywheelConfig.targetRpm;
 
         if (autoFromDistance) {
             double distance = distanceProvider.getDistance();
