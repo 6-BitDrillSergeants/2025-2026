@@ -14,13 +14,7 @@ import dev.nextftc.hardware.positionable.SetPosition;
  * Controls the feeder paddle servo used to advance game pieces into the shooter.
  */
 public final class Paddle implements Subsystem {
-
-    public static final Paddle INSTANCE = new Paddle();
-
     private final ServoEx paddleServo = new ServoEx(RobotConfig.paddleServoName);
-
-    private Paddle() {
-    }
 
     /**
      * Simple command to move the paddle down.

@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import static dev.nextftc.extensions.pedro.PedroComponent.follower;
-
+import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 
 import org.firstinspires.ftc.teamcode.config.RobotConfig;
@@ -11,10 +10,11 @@ import dev.nextftc.core.subsystems.Subsystem;
 
 public final class PosePublisher implements Subsystem {
 
-    public static final PosePublisher INSTANCE = new PosePublisher();
-
-    private PosePublisher() {
+    public PosePublisher(Follower follower) {
+        this.follower = follower;
     }
+
+    private final Follower follower;
 
     @Override
     public void initialize() {
@@ -24,8 +24,8 @@ public final class PosePublisher implements Subsystem {
 
     @Override
     public void periodic() {
-        Pose pose = follower().getPose();
+        Pose pose = follower.getPose();
         RobotConfig.setCurrentPose(pose);
-        Drawing.drawDebug(follower());  // robot + path + history
+        Drawing.drawDebug(follower);  // robot + path + history
     }
 }

@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.config.RobotConfig;
 
-public class Constants {
+public class TeleopConstants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(10.8)
             .forwardZeroPowerAcceleration(-42)
@@ -27,8 +27,8 @@ public class Constants {
             .useSecondaryTranslationalPIDF(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.2,0,0, 0.3))
             .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(0.03,0,0,0.005))
-            .headingPIDFCoefficients(new PIDFCoefficients(1,0,0,0.25))
-            .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(1,0,0,0.01))
+            .headingPIDFCoefficients(new PIDFCoefficients(1.5,0,0,0.25))
+            .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(1.05,0,0,0.01))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.01,0,0,0.5,0.3))
             .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(0.002,0,0,0.5,0.2));
 

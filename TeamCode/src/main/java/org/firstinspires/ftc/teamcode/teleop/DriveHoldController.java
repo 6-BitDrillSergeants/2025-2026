@@ -1,22 +1,32 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.config.GoalConfig;
 import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.subsystems.Paddle;
 import org.firstinspires.ftc.teamcode.targeting.AimingCalculator;
-import org.firstinspires.ftc.teamcode.config.GoalConfig;
 
 import dev.nextftc.core.commands.CommandManager;
-import dev.nextftc.extensions.pedro.PedroComponent;
 
 final class DriveHoldController {
+
+    public DriveHoldController(Follower follower, Flywheel flywheel, Paddle paddle) {
+        this.follower = follower;
+        this.flywheel = flywheel;
+        this.paddle = paddle;
+    }
+
+    private final Follower follower;
+    private final Flywheel flywheel;
+    private final Paddle paddle;
 
     private static final double IDLE_SETTLE_SEC = 0.15;
     private static final double TURN_CANCEL_THRESHOLD = 0.02;
 
-    private static final double AIM_HEADING_TOL_RAD = Math.toRadians(2.0);
+    private static final double AIM_HEADING_TOL_RAD = Math.toRadians(3.0);
     private static final double AIM_ANCHOR_TOL_IN = 2.0;
 
     private Pose aimPose = new Pose();
@@ -30,14 +40,8 @@ final class DriveHoldController {
 
     private final ElapsedTime idleSettleTimer = new ElapsedTime();
 
-    void resetForStart() {
-        PedroComponent.follower().startTeleopDrive();
-
-        wasDriverInput = true;
-        idleHoldActive = false;
-        aimHoldActive = false;
-        pendingIdleHold = false;
-        aimRequested = false;
+    void start() {
+        follower.startTeleopDrive();
     }
 
     void handleDriverInput(boolean driverInputDetected) {
@@ -51,7 +55,7 @@ final class DriveHoldController {
         if (!wasDriverInput) {
             idleHoldActive = false;
             aimHoldActive = false;
-            PedroComponent.follower().startTeleopDrive();
+            follower.startTeleopDrive();
         }
     }
 
@@ -59,17 +63,17 @@ final class DriveHoldController {
         if (!driverInputDetected && wasDriverInput) {
             pendingIdleHold = true;
             idleSettleTimer.reset();
-            PedroComponent.follower().setTeleOpDrive(0, 0, 0, true);
+            follower.setTeleOpDrive(0, 0, 0, true);
         }
 
         if (!driverInputDetected && pendingIdleHold) {
             boolean turnIsReallyZero = Math.abs(turnInput) <= TURN_CANCEL_THRESHOLD;
             if (turnIsReallyZero && idleSettleTimer.seconds() >= IDLE_SETTLE_SEC) {
-                Pose idleHoldPose = PedroComponent.follower().getPose();
+                Pose idleHoldPose = follower.getPose();
                 idleHoldActive = true;
                 aimHoldActive = false;
                 pendingIdleHold = false;
-                PedroComponent.follower().holdPoint(idleHoldPose);
+                follower.holdPoint(idleHoldPose);
             }
         }
     }
@@ -83,7 +87,7 @@ final class DriveHoldController {
             return;
         }
 
-        Pose currentPose = PedroComponent.follower().getPose();
+        Pose currentPose = follower.getPose();
         aimPose = AimingCalculator.computeAimPose(currentPose, GoalConfig.goal);
         aimRequested = true;
 
@@ -92,7 +96,7 @@ final class DriveHoldController {
         pendingIdleHold = false;
 
         aimAnchorPose = currentPose;
-        PedroComponent.follower().holdPoint(aimPose);
+        follower.holdPoint(aimPose);
     }
 
     void handleAutoFireWhenAimed() {
@@ -100,12 +104,12 @@ final class DriveHoldController {
             return;
         }
 
-        Pose currentPose = PedroComponent.follower().getPose();
+        Pose currentPose = follower.getPose();
         boolean headingGood = isHeadingGood(currentPose);
         boolean anchorStillValid = isAnchorGood(currentPose);
 
-        if (headingGood && anchorStillValid && Flywheel.INSTANCE.isAtSpeed()) {
-            CommandManager.INSTANCE.scheduleCommand(Paddle.INSTANCE.feedOnce());
+        if (headingGood && anchorStillValid && flywheel.isAtSpeed()) {
+            CommandManager.INSTANCE.scheduleCommand(paddle.feedOnce());
             aimRequested = false;
         }
     }
@@ -116,7 +120,7 @@ final class DriveHoldController {
         aimHoldActive = false;
         aimRequested = false;
 
-        PedroComponent.follower().startTeleopDrive();
+        follower.startTeleopDrive();
     }
 
     boolean isHeadingGood(Pose currentPose) {

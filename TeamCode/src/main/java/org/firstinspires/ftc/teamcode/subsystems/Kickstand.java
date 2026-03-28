@@ -12,13 +12,7 @@ import dev.nextftc.hardware.impl.MotorEx;
 
 /** Controls the kickstand motor position using RUN_TO_POSITION mode. */
 public final class Kickstand implements Subsystem {
-
-    public static final Kickstand INSTANCE = new Kickstand();
-
     private final MotorEx kickstandMotor = new MotorEx(RobotConfig.kickstandMotorName);
-
-    private Kickstand() {
-    }
 
     /** Moves the kickstand to the configured deployed position. */
     public void deploy() {
@@ -28,11 +22,6 @@ public final class Kickstand implements Subsystem {
     /** Moves the kickstand to the configured retracted position. */
     public void retract() {
         moveTo(KickstandConfig.retractTicks);
-    }
-
-    /** Returns whether the motor controller is still driving toward its target. */
-    public boolean isBusy() {
-        return kickstandMotor.getMotor().isBusy();
     }
 
     private void moveTo(int ticks) {

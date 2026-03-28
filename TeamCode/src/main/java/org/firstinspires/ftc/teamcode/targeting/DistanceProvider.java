@@ -5,21 +5,18 @@ import com.pedropathing.geometry.Pose;
 
 import org.firstinspires.ftc.teamcode.config.GoalConfig;
 
-import dev.nextftc.extensions.pedro.PedroComponent;
-
 public final class DistanceProvider {
 
-    public static final DistanceProvider INSTANCE = new DistanceProvider();
-
-    private DistanceProvider() {
+    public DistanceProvider(Follower follower) {
+        this.follower = follower;
     }
+
+    private final Follower follower;
 
     /**
      * Returns distance from current pose to (targetX, targetY).
      */
     public double getDistance() {
-        Follower follower = PedroComponent.follower();
-
         Pose current = follower.getPose();
         Pose target = AimingCalculator.computeDynamicGoalPose(current, GoalConfig.goal);
 

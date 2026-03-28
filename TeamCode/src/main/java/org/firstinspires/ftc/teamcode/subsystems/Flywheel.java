@@ -25,13 +25,13 @@ import kotlin.Unit;
  * <p>Supports either manual RPM targets or automatic distance-based targets.
  */
 public final class Flywheel implements Subsystem {
-
-    public static final Flywheel INSTANCE = new Flywheel();
-
-    private Flywheel() {
-    }
-
     private final MotorEx flywheelMotor = new MotorEx(RobotConfig.flywheelMotorName);
+    private final DistanceProvider distanceProvider;
+
+    public Flywheel(DistanceProvider distanceProvider) {
+        this.distanceProvider = distanceProvider;
+        rebuildController();
+    }
 
     private ControlSystem controller;
 
@@ -74,7 +74,7 @@ public final class Flywheel implements Subsystem {
     }
 
     public boolean isAtSpeed() {
-        return abs(FlywheelConfig.targetRpm - ticksPerSecondToRpm(flywheelMotor.getVelocity())) <= FlywheelConfig.toleranceRpm;
+        return abs(targetRpm - ticksPerSecondToRpm(flywheelMotor.getVelocity())) <= FlywheelConfig.toleranceRpm;
     }
 
     public void stop() {
@@ -86,8 +86,6 @@ public final class Flywheel implements Subsystem {
     @Override
     public void initialize() {
         Subsystem.super.initialize();
-        rebuildController();
-
         flywheelMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
@@ -96,16 +94,16 @@ public final class Flywheel implements Subsystem {
         // When tuning, rebuild the controller in case any config variables changed
         // rebuildController();
 
+        targetRpm = FlywheelConfig.targetRpm;
+
         if (autoFromDistance) {
-            double distance = DistanceProvider.INSTANCE.getDistance();
+            double distance = distanceProvider.getDistance();
             targetRpm = rpmForDistance(distance);
-            FlywheelConfig.targetRpm = targetRpm;
         }
 
-        controller.setGoal(new KineticState(0.0, rpmToTicksPerSecond(FlywheelConfig.targetRpm)));
+        controller.setGoal(new KineticState(0.0, rpmToTicksPerSecond(targetRpm)));
         double power = controller.calculate(new KineticState(0, flywheelMotor.getVelocity()));
 
-        //flywheelMotor.getMotor().setVelocity(rpmToTicksPerSecond(FlywheelConfig.targetRpm));
         flywheelMotor.setPower(power);
     }
 
@@ -115,8 +113,7 @@ public final class Flywheel implements Subsystem {
 
 
     private double rpmForDistance(double distanceRaw) {
-        double d = clamp(distanceRaw, 0.0, 80.0);
-        double rpm = 12.9 * distanceRaw + 1451;
+        double rpm = (12.9 * distanceRaw + 1451) * .98;
         return max(0.0, rpm);
     }
 
@@ -134,10 +131,6 @@ public final class Flywheel implements Subsystem {
         double motorRevPerSec = (FlywheelConfig.ticksPerRev == 0.0) ? 0.0 : (ticksPerSecond / FlywheelConfig.ticksPerRev);
         double flywheelRevPerSec = motorRevPerSec * FlywheelConfig.gearRatio;
         return flywheelRevPerSec * 60.0;
-    }
-
-    private static double clamp(double v, double min, double max) {
-        return Math.max(min, Math.min(max, v));
     }
 
     // ----------------------------
