@@ -126,6 +126,8 @@ public class Drive extends NextFTCOpMode {
         holdController.updateDriverInputState(input.driverInputDetected());
 
         applyTeleopDrive(input);
+
+        // --------------------
         holdController.handleAimHoldRequest(gamepad1.rightBumperWasPressed());
         holdController.handleAutoFireWhenAimed();
 
@@ -165,7 +167,7 @@ public class Drive extends NextFTCOpMode {
         // ------------------- Kickstand ---------------------------------------
         if (gamepad1.xWasPressed()) {
             holdController.cancelHolds();
-            kickstand.deploy();
+            kickstand.deploy().run();
         } else if (gamepad1.yWasPressed()) {
             kickstand.retract();
         }

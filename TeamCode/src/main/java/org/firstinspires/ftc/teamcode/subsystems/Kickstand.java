@@ -6,7 +6,12 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.subsystems.config.KickstandConfig;
+import org.firstinspires.ftc.teamcode.subsystems.config.PaddleConfig;
 
+import dev.nextftc.core.commands.Command;
+import dev.nextftc.core.commands.delays.Delay;
+import dev.nextftc.core.commands.groups.SequentialGroup;
+import dev.nextftc.core.commands.utility.InstantCommand;
 import dev.nextftc.core.subsystems.Subsystem;
 import dev.nextftc.hardware.impl.MotorEx;
 
@@ -15,8 +20,15 @@ public final class Kickstand implements Subsystem {
     private final MotorEx kickstandMotor = new MotorEx(RobotConfig.kickstandMotorName);
 
     /** Moves the kickstand to the configured deployed position. */
-    public void deploy() {
-        moveTo(KickstandConfig.deployTicks);
+    public Command deploy() {
+        return new SequentialGroup(new InstantCommand(() -> moveTo(-800)),
+                new Delay(1),
+                new InstantCommand(() -> moveTo(-1150)),
+                new Delay(1),
+                new InstantCommand(() -> moveTo(-1200)),
+                new Delay(2),
+                new InstantCommand(() -> moveTo(-1250)),
+                new Delay(1)).requires(this);
     }
 
     /** Moves the kickstand to the configured retracted position. */
@@ -37,7 +49,7 @@ public final class Kickstand implements Subsystem {
         Subsystem.super.initialize();
 
         DcMotorEx motor = kickstandMotor.getMotor();
-        motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        //motor.setDirection(DcMotorSimple.Direction.REVERSE);
         motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }

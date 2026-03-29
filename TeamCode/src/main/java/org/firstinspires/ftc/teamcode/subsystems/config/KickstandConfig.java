@@ -8,7 +8,7 @@ public final class KickstandConfig {
     private KickstandConfig() {
     }
 
-    public static int deployTicks = 800;
+    public static int deployTicks = -1250; //was 800
     public static int retractTicks = 0;
-    public static double movePower = 0.5;
+    public static double movePower = 0.25; //was 0.5
 }

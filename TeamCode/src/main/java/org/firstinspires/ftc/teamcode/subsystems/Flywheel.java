@@ -111,7 +111,6 @@ public final class Flywheel implements Subsystem {
     // Distance -> RPM mapping
     // ----------------------------
 
-
     private double rpmForDistance(double distanceRaw) {
         double rpm = (12.9 * distanceRaw + 1451) * .98;
         return max(0.0, rpm);
