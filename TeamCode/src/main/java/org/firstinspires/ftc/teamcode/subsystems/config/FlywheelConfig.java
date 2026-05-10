@@ -20,10 +20,10 @@ public final class FlywheelConfig {
     public static double toleranceRpm = 50.0;
 
     // PID (NextControl).
-    public static PIDCoefficients pid = new PIDCoefficients(0.011, 0.0, 0.0);
+    public static PIDCoefficients pid = new PIDCoefficients(0.00375, 0.0, 0.0);
 
     // Feedforward (basicFF: v, a, s).
-    public static double ffV = 0.00065; // power per (tick/sec)
+    public static double ffV = 0.00045; // power per (tick/sec)
     public static double ffA = 0.0;     // usually 0 unless profiling
     public static double ffS = 0.0;     // static friction
 }

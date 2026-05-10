@@ -5,7 +5,6 @@ import static java.lang.Math.max;
 import static dev.nextftc.control.builder.ControlSystemBuilderKt.controlSystem;
 
 import com.bylazar.telemetry.TelemetryManager;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -25,7 +24,7 @@ import kotlin.Unit;
  * <p>Supports either manual RPM targets or automatic distance-based targets.
  */
 public final class Flywheel implements Subsystem {
-    private final MotorEx flywheelMotor = new MotorEx(RobotConfig.flywheelMotorName);
+    private final MotorEx flywheelMotor = new MotorEx(RobotConfig.flywheelMotorName).floatMode();
     private final DistanceProvider distanceProvider;
 
     public Flywheel(DistanceProvider distanceProvider) {
@@ -74,7 +73,7 @@ public final class Flywheel implements Subsystem {
     }
 
     public boolean isAtSpeed() {
-        return abs(targetRpm - ticksPerSecondToRpm(flywheelMotor.getVelocity())) <= FlywheelConfig.toleranceRpm;
+        return abs(targetRpm - abs(ticksPerSecondToRpm(flywheelMotor.getVelocity()))) <= FlywheelConfig.toleranceRpm;
     }
 
     public void stop() {
@@ -86,13 +85,12 @@ public final class Flywheel implements Subsystem {
     @Override
     public void initialize() {
         Subsystem.super.initialize();
-        flywheelMotor.getMotor().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
     @Override
     public void periodic() {
         // When tuning, rebuild the controller in case any config variables changed
-        // rebuildController();
+         rebuildController();
 
         targetRpm = FlywheelConfig.targetRpm;
 
@@ -101,7 +99,7 @@ public final class Flywheel implements Subsystem {
             targetRpm = rpmForDistance(distance);
         }
 
-        controller.setGoal(new KineticState(0.0, rpmToTicksPerSecond(targetRpm)));
+        controller.setGoal(new KineticState(0.0, rpmToTicksPerSecond(-targetRpm)));
         double power = controller.calculate(new KineticState(0, flywheelMotor.getVelocity()));
 
         flywheelMotor.setPower(power);
@@ -150,6 +148,7 @@ public final class Flywheel implements Subsystem {
         double rpmError = targetRpm - currentRpm;
 
         // These should appear as numeric series in Panels
+        telemetryM.addData("direction", flywheelMotor.getMotor().getDirection().toString());
         telemetryM.addData("flywheel/target_rpm", targetRpm);
         telemetryM.addData("flywheel/current_rpm", currentRpm);
         telemetryM.addData("flywheel/error_rpm", rpmError);
