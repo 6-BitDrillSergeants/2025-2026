@@ -68,7 +68,7 @@ public final class Flywheel implements Subsystem {
     public double getCurrentRpm() {
         DcMotorEx motor = flywheelMotor.getMotor();
         double motorRevPerSec = motor.getVelocity() / FlywheelConfig.ticksPerRev;
-        double flywheelRevPerSec = motorRevPerSec * FlywheelConfig.gearRatio;
+        double flywheelRevPerSec = motorRevPerSec * FlywheelConfig.gearRatio * -1;
         return flywheelRevPerSec * 60.0;
     }
 

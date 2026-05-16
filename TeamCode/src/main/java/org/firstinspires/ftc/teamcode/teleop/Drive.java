@@ -180,7 +180,7 @@ public class Drive extends NextFTCOpMode {
             didRumble145 = true;
         }
 
-        // Shutdown at 1:55 (once) UPDATED TO 500 SECONDS
+        // Shutdown at 1:55 (once)
         if (!didShutdown155 && elapsedSec >= SHUTDOWN_TIME_SEC) {
             flywheel.stop();
             intake.off();
