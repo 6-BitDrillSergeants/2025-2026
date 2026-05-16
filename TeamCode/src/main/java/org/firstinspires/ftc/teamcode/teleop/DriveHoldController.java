@@ -9,8 +9,6 @@ import org.firstinspires.ftc.teamcode.subsystems.Flywheel;
 import org.firstinspires.ftc.teamcode.subsystems.Paddle;
 import org.firstinspires.ftc.teamcode.targeting.AimingCalculator;
 
-import dev.nextftc.core.commands.CommandManager;
-
 final class DriveHoldController {
 
     public DriveHoldController(Follower follower, Flywheel flywheel, Paddle paddle) {
@@ -109,7 +107,7 @@ final class DriveHoldController {
         boolean anchorStillValid = isAnchorGood(currentPose);
 
         if (headingGood && anchorStillValid && flywheel.isAtSpeed()) {
-            CommandManager.INSTANCE.scheduleCommand(paddle.feedOnce());
+            paddle.feedOnce().run();
             aimRequested = false;
         }
     }
