@@ -2,11 +2,9 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.config.RobotConfig;
 import org.firstinspires.ftc.teamcode.subsystems.config.KickstandConfig;
-import org.firstinspires.ftc.teamcode.subsystems.config.PaddleConfig;
 
 import dev.nextftc.core.commands.Command;
 import dev.nextftc.core.commands.delays.Delay;
@@ -25,9 +23,9 @@ public final class Kickstand implements Subsystem {
                 new Delay(1),
                 new InstantCommand(() -> moveTo(-1150)),
                 new Delay(1),
-                new InstantCommand(() -> moveTo(-1200)),
+                new InstantCommand(() -> moveTo(-1175)),
                 new Delay(2),
-                new InstantCommand(() -> moveTo(-1250)),
+                new InstantCommand(() -> moveTo(-1220)),
                 new Delay(1)).requires(this);
     }
 

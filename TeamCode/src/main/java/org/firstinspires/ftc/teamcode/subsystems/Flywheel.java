@@ -68,7 +68,7 @@ public final class Flywheel implements Subsystem {
     public double getCurrentRpm() {
         DcMotorEx motor = flywheelMotor.getMotor();
         double motorRevPerSec = motor.getVelocity() / FlywheelConfig.ticksPerRev;
-        double flywheelRevPerSec = motorRevPerSec * FlywheelConfig.gearRatio;
+        double flywheelRevPerSec = motorRevPerSec * FlywheelConfig.gearRatio * -1;
         return flywheelRevPerSec * 60.0;
     }
 
@@ -110,7 +110,7 @@ public final class Flywheel implements Subsystem {
     // ----------------------------
 
     private double rpmForDistance(double distanceRaw) {
-        double rpm = (12.9 * distanceRaw + 1451) * .98;
+        double rpm = (12.9 * distanceRaw + 1451) * FlywheelConfig.curveAdjustment;
         return max(0.0, rpm);
     }
 

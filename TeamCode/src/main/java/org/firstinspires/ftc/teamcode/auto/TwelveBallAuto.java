@@ -243,7 +243,7 @@ public class TwelveBallAuto extends NextFTCOpMode {
         if (!didFlywheelCutoff) {
             return new SequentialGroup(
                     new WaitUntilCommand(flywheel::isAtSpeed),
-                    paddle.feedOnce());
+                    paddle.feedOnce(intake));
         }
 
         return new InstantCommand(() -> {

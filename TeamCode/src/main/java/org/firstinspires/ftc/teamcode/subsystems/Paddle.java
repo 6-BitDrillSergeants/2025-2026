@@ -6,6 +6,7 @@ import org.firstinspires.ftc.teamcode.subsystems.config.PaddleConfig;
 import dev.nextftc.core.commands.Command;
 import dev.nextftc.core.commands.delays.Delay;
 import dev.nextftc.core.commands.groups.SequentialGroup;
+import dev.nextftc.core.commands.utility.InstantCommand;
 import dev.nextftc.core.subsystems.Subsystem;
 import dev.nextftc.hardware.impl.ServoEx;
 import dev.nextftc.hardware.positionable.SetPosition;
@@ -29,11 +30,16 @@ public final class Paddle implements Subsystem {
     /**
      * Runs one feed cycle: raise -> wait -> lower.
      */
-    public Command feedOnce() {
-        return new SequentialGroup(raise,
+    public Command feedOnce(Intake intake) {
+        //boolean intakeOn = intake.isOn();
+
+        return new SequentialGroup(
+                new InstantCommand(intake::off),
+                raise,
                 new Delay(PaddleConfig.feedTimeSeconds),
                 lower,
-                new Delay(PaddleConfig.feedTimeSeconds)).requires(this);
+                new Delay(PaddleConfig.feedTimeSeconds),
+                new InstantCommand(intake::on)).requires(this);
     }
 
     @Override

@@ -121,7 +121,7 @@ public class ThreeBallAuto extends NextFTCOpMode {
     private SequentialGroup shootCommand() {
         return new SequentialGroup(
                 new WaitUntilCommand(flywheel::isAtSpeed),
-                paddle.feedOnce());
+                paddle.feedOnce(intake));
     }
 
     @Override
