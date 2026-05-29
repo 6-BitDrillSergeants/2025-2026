@@ -28,5 +28,5 @@ public final class FlywheelConfig {
     public static double ffS = 0.0;     // static friction
 
     // Oliver look here for distance adjustments !!
-    public static double curveAdjustment = .96;
+    public static double curveAdjustment = .9725; //.96 .975
 }

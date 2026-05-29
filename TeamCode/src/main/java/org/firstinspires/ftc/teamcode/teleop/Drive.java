@@ -161,14 +161,22 @@ public class Drive extends NextFTCOpMode {
 
         // ------------------- Force shot --------------------------------------
         if (gamepad1.rightTriggerWasPressed()) {
-            paddle.feedOnce(intake).run();
+            paddle.feedOnce(intake).run();//.run();
         }
 
-        // ------------------- Kickstand ---------------------------------------
+        // ------------------- Kickstand High ---------------------------------------
         if (gamepad1.xWasPressed()) {
             holdController.cancelHolds();
             kickstand.deploy().run();
         } else if (gamepad1.yWasPressed()) {
+            kickstand.retract();
+        }
+
+        // ------------------- Kickstand Low ---------------------------------------
+        if (gamepad2.xWasPressed()) {
+            holdController.cancelHolds();
+            kickstand.deployLow().run();
+        } else if (gamepad2.yWasPressed()) {
             kickstand.retract();
         }
 
@@ -180,7 +188,7 @@ public class Drive extends NextFTCOpMode {
             didRumble145 = true;
         }
 
-        // Shutdown at 1:55 (once)
+        // Shutdown at 1:55 (once) UPDATED TO 500 SECONDS
         if (!didShutdown155 && elapsedSec >= SHUTDOWN_TIME_SEC) {
             flywheel.stop();
             intake.off();

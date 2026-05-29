@@ -25,9 +25,16 @@ public final class Kickstand implements Subsystem {
                 new Delay(1),
                 new InstantCommand(() -> moveTo(-1175)),
                 new Delay(2),
-                new InstantCommand(() -> moveTo(-1220)),
+               // new InstantCommand(() -> moveTo(-1220)),
                 new Delay(1)).requires(this);
     }
+
+    public Command deployLow() {
+        return new SequentialGroup(new InstantCommand(() -> moveTo(-600)),
+                new Delay(1),
+                new Delay(1)).requires(this);
+    }
+
 
     /** Moves the kickstand to the configured retracted position. */
     public void retract() {
