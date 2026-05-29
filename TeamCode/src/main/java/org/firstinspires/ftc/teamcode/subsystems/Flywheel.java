@@ -142,6 +142,13 @@ public final class Flywheel implements Subsystem {
         });
     }
 
+    // ----------------------------
+    // Circumvent PID, Set Velocity
+    // ----------------------------
+//    private void setVelocity(double velocity) {
+//        flywheelMotor.setVelocity();
+//    }
+
     public void publishTelemetry(TelemetryManager telemetryM) {
         double targetRpm = getTargetRpm();
         double currentRpm = getCurrentRpm();

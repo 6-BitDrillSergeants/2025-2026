@@ -145,11 +145,11 @@ public class FarBackAuto extends NextFTCOpMode {
         AutoPaths paths = new AutoPaths();
 
         follower.setStartingPose(paths.getStartingPose());
+
+        // Enable far back flywheel RPM
         flywheel.setTargetRpm(3600);
         return new SequentialGroup(
                 paddle.lower,
-
-                // Enable distance-based flywheel RPM
 
                 // Move forward to shoot preloaded balls
                 new FollowPath(paths.shootPreloadPath.build(follower, GoalConfig.goal)),

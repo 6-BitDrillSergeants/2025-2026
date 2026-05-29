@@ -152,6 +152,15 @@ public class Drive extends NextFTCOpMode {
             flywheel.setTargetRpm((Math.max(FlywheelConfig.targetRpm - 50, 0)));
         }
 
+        //shoot from back with max power
+        if (gamepad2.aWasPressed()) {
+            flywheel.disableAutoFromDistance();
+            flywheel.setTargetRpm(3600);
+        } else if (gamepad2.bWasPressed()) {
+            flywheel.enableAutoFromDistance();
+        }
+
+
         // ------------------- Auto adjust speed for flywheel ------------------
         if (gamepad1.dpadLeftWasPressed()) {
             flywheel.disableAutoFromDistance();
