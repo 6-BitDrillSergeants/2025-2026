@@ -42,7 +42,7 @@ public class FarBackAuto extends NextFTCOpMode {
         private final Pose blueStartingPose = new Pose(55, 8, Math.toRadians(90));
         private final Pose shortShootingPose = new Pose(55, 15, Math.toRadians(shootingAngle));
 
-        private final Pose collectBackPose = new Pose(7,8, Math.toRadians(180));
+        private final Pose collectBackPose = new Pose(20,8, Math.toRadians(180));
 
         public final AutoPathSpec shootPreloadPath = new AutoPathSpec()
                 .addLine(blueStartingPose,
@@ -166,22 +166,25 @@ public class FarBackAuto extends NextFTCOpMode {
                 new FollowPath(paths.goGrab.build(follower, GoalConfig.goal)),
                 new Delay(0.25),
                 new InstantCommand(intake::off),
+                new InstantCommand(flywheel::stop),
+                new Delay(0.25)
 
-                // Drive to shooting location
-                new FollowPath(paths.returnToShoot.build(follower, GoalConfig.goal)),
-
-                // Shoot balls 3-6
-                shootCommand(),
-                new Delay(0.25),
-                new InstantCommand(intake::on),
-                shootCommand(),
-                new Delay(0.25),
-                shootCommand(),
-
-                //Collect balls
-                new FollowPath(paths.goGrab.build(follower, GoalConfig.goal)),
-                new Delay(0.25),
-                new InstantCommand(intake::off)
+//                // Drive to shooting location
+//                new FollowPath(paths.returnToShoot.build(follower, GoalConfig.goal)),
+//
+//                // Shoot balls 3-6
+//                shootCommand(),
+//                new Delay(0.25),
+//                new InstantCommand(intake::on),
+//                shootCommand(),
+//                new Delay(0.25),
+//                shootCommand(),
+//
+//                //Collect balls
+//                new FollowPath(paths.goGrab.build(follower, GoalConfig.goal)),
+//                new Delay(0.25),
+//                new InstantCommand(intake::off),
+//                new InstantCommand(flywheel::stop)
 
 
 

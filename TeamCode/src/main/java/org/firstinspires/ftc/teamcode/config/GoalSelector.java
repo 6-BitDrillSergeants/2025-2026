@@ -20,11 +20,11 @@ public final class GoalSelector {
         // LED feedback
         if (GoalConfig.goal == Goal.RED) {
             gamepad.setLedColor(1.0, 0.0, 0.0, Gamepad.LED_DURATION_CONTINUOUS);
-            light.setPosition(.28);
+            light.setPosition(.28); //red
 
         } else {
             gamepad.setLedColor(0.0, 0.0, 1.0, Gamepad.LED_DURATION_CONTINUOUS);
-            light.setPosition(.6);
+            light.setPosition(.6); //blue
         }
 
         telemetryM.debug("Goal select: press BACK to toggle", GoalConfig.goal);

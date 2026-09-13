@@ -31,7 +31,7 @@ final class DriveHoldController {
     private static final double AIM_ANCHOR_TOL_IN = 2.0;
 
     private Pose aimPose = new Pose();
-    private Pose aimAnchorPose = new Pose();
+    privat  e Pose aimAnchorPose = new Pose();
 
     private boolean aimRequested = false;
     private boolean wasDriverInput = true;

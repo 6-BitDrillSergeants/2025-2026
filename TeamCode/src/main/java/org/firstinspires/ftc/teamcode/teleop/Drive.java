@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.teleop;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
-import com.pedropathing.follower.Follower;
+//import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -38,6 +38,7 @@ public class Drive extends NextFTCOpMode {
 
     //private static final double STICK_DEAD_ZONE = .05;
 
+    /*
     private DriveHoldController holdController;
 
     // ------------------- Endgame timers -------------------
@@ -47,16 +48,21 @@ public class Drive extends NextFTCOpMode {
 
     private static final double RUMBLE_TIME_SEC = 105.0;   // 1:45
     private static final double SHUTDOWN_TIME_SEC = 115.0; // 1:55 is 115.0, has been increased for testing
+    */
 
     private final PedroComponent pedroComponent = new PedroComponent(TeleopConstants::createFollower);
 
+    /*
     private Flywheel flywheel;
     private Paddle paddle;
     private Intake intake;
     private Kickstand kickstand;
-    private Follower follower;
+    */
+    //private Follower follower;
+    /*
     private DistanceProvider distanceProvider;
     private Servo light;
+    */
 
     public Drive() {
         // Register components BEFORE init runs
@@ -70,41 +76,54 @@ public class Drive extends NextFTCOpMode {
         super.onInit();
 
 
+        /*
         light = hardwareMap.get(Servo.class, "light");
 
         intake = new Intake();
         paddle = new Paddle();
         kickstand = new Kickstand();
-        follower = PedroComponent.follower();
+        */
+        //follower = PedroComponent.follower();
+        /*
         distanceProvider = new DistanceProvider(follower);
         flywheel = new Flywheel(distanceProvider);
         holdController = new DriveHoldController(follower, flywheel, paddle, intake);
+        */
 
         addComponents(
                 // NextFTC runtime plumbing
                 BindingsComponent.INSTANCE,
                 BulkReadComponent.INSTANCE,
-                CommandManager.INSTANCE,
+                CommandManager.INSTANCE
+
+                /*
+                ,
 
                 // Subsystems
                 new SubsystemComponent(
                         flywheel,
                         intake,
                         kickstand,
-                        paddle));
+                        paddle)
+                */
+        );
     }
 
     @Override
     public void onWaitForStart() {
         super.onWaitForStart();
+        /*
         GoalSelector.update(gamepad1, light, telemetryM);
+        */
         telemetryM.update(telemetry);
     }
 
     @Override
     public void onStartButtonPressed() {
         startingPose = RobotConfig.getCurrentPose();
-        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        //follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+
+        /*
         holdController.start();
 
         flywheel.enableAutoFromDistance();
@@ -113,6 +132,7 @@ public class Drive extends NextFTCOpMode {
         matchTimer.reset();
         didRumble145 = false;
         didShutdown155 = false;
+        */
     }
 
     @Override
@@ -121,21 +141,26 @@ public class Drive extends NextFTCOpMode {
 
         DriveInput input = readDriveInput();
 
+        /*
         holdController.handleDriverInput(input.driverInputDetected());
         holdController.handleIdleSettleAndHold(input.driverInputDetected(), input.turn());
         holdController.updateDriverInputState(input.driverInputDetected());
+        */
 
         applyTeleopDrive(input);
 
+        /*
         // --------------------
         holdController.handleAimHoldRequest(gamepad1.rightBumperWasPressed());
         holdController.handleAutoFireWhenAimed();
+        */
 
         // ------------------- Slow Mode toggle --------------------------------
         if (gamepad1.leftBumperWasPressed()) {
             slowMode = !slowMode;
         }
 
+        /*
         // ------------------- Intake ------------------------------------------
         if (gamepad2.leftTriggerWasPressed()) {
             if (intake.isOn()) {
@@ -205,6 +230,7 @@ public class Drive extends NextFTCOpMode {
         }
 
         publishCompetitionTelemetry(input);
+        */
     }
 
     private DriveInput readDriveInput() {
@@ -231,7 +257,7 @@ public class Drive extends NextFTCOpMode {
             turn *= slowModeMultiplier;
         }
 
-        follower.setTeleOpDrive(driveY, driveX, turn, true);
+        //follower.setTeleOpDrive(driveY, driveX, turn, true);
     }
 
 
@@ -283,9 +309,12 @@ public class Drive extends NextFTCOpMode {
     @Override
     public void onStop() {
         super.onStop();
+        /*
         kickstand.retract();
+        */
     }
 
+    /*
     private void publishCompetitionTelemetry(DriveInput input) {
         Pose currentPose = follower.getPose();
         double distanceToGoal = distanceProvider.getDistance();
@@ -375,4 +404,5 @@ public class Drive extends NextFTCOpMode {
     private String asStatus(boolean ready) {
         return ready ? "[✓]" : "[   ]";
     }
+    */
 }
